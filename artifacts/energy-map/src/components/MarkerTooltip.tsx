@@ -3,6 +3,7 @@ import { EnergyAsset } from '@/data/assets';
 interface MarkerTooltipProps {
   asset: EnergyAsset;
   onViewData: () => void;
+  flipDown?: boolean;
 }
 
 function fmt(n: number | undefined) {
@@ -10,13 +11,33 @@ function fmt(n: number | undefined) {
   return n.toLocaleString('en-GB') + ' kWh';
 }
 
-export function MarkerTooltip({ asset, onViewData }: MarkerTooltipProps) {
+export function MarkerTooltip({ asset, onViewData, flipDown = false }: MarkerTooltipProps) {
   return (
     <div
       data-testid={`tooltip-${asset.id}`}
       className="absolute z-30 pointer-events-auto"
-      style={{ bottom: 'calc(100% + 10px)', left: '50%', transform: 'translateX(-50%)', minWidth: 220 }}
+      style={{
+        left: '50%',
+        transform: 'translateX(-50%)',
+        minWidth: 220,
+        ...(flipDown
+          ? { top: 'calc(100% + 10px)' }
+          : { bottom: 'calc(100% + 10px)' }),
+      }}
     >
+      {flipDown && (
+        <div
+          className="mx-auto mb-0"
+          style={{
+            width: 0,
+            height: 0,
+            borderLeft: '6px solid transparent',
+            borderRight: '6px solid transparent',
+            borderBottom: '6px solid #1a1a1a',
+          }}
+        />
+      )}
+
       <div className="rounded-lg shadow-2xl overflow-hidden" style={{ background: '#1a1a1a' }}>
         <div className="h-1 w-full" style={{ background: '#dc2626' }} />
         <div className="px-3.5 py-3">
@@ -43,16 +64,19 @@ export function MarkerTooltip({ asset, onViewData }: MarkerTooltipProps) {
           </button>
         </div>
       </div>
-      <div
-        className="mx-auto"
-        style={{
-          width: 0,
-          height: 0,
-          borderLeft: '6px solid transparent',
-          borderRight: '6px solid transparent',
-          borderTop: '6px solid #1a1a1a',
-        }}
-      />
+
+      {!flipDown && (
+        <div
+          className="mx-auto"
+          style={{
+            width: 0,
+            height: 0,
+            borderLeft: '6px solid transparent',
+            borderRight: '6px solid transparent',
+            borderTop: '6px solid #1a1a1a',
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -273,7 +273,7 @@ export function EnergyMap() {
                 )}
 
                 {!editMode && isHovered && (
-                  <MarkerTooltip asset={asset} onViewData={() => handleOpen(asset)} />
+                  <MarkerTooltip asset={asset} onViewData={() => handleOpen(asset)} flipDown={asset.y < 25} />
                 )}
               </div>
             );
