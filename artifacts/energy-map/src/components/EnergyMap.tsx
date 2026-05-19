@@ -12,6 +12,7 @@ import { StickerOverlay, StickerTransform } from './StickerOverlay';
 import { AddMpanDialog } from './AddMpanDialog';
 import { SubMapView } from './SubMapView';
 import { DataPanel } from './DataPanel';
+import { TableModal } from './TableModal';
 import { AddLabelDialog } from './AddLabelDialog';
 import { FreeLabel } from './FreeLabel';
 import { submaps } from '@/data/submaps';
@@ -132,6 +133,7 @@ export function EnergyMap() {
   const [addLabelMode, setAddLabelMode] = useState(false);
   const [pendingLabel, setPendingLabel] = useState<{ x: number; y: number } | null>(null);
   const [dataPanelOpen, setDataPanelOpen] = useState(true);
+  const [tableModalOpen, setTableModalOpen] = useState(false);
   const [activeSubMapId, setActiveSubMapId] = useState<string | null>(null);
   const [subMapOrigin, setSubMapOrigin] = useState({ x: 50, y: 50 });
   const [stickerTransforms, setStickerTransforms] = useState<Record<string, StickerTransform>>(() => initStickerTransforms());
@@ -415,6 +417,16 @@ export function EnergyMap() {
             <p className="text-[10px] text-gray-500 leading-tight">Energy Asset Map</p>
           </div>
         </div>
+        <button
+          onClick={() => setTableModalOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-900 transition-colors"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <path d="M3 9h18M3 15h18M9 9v9" />
+          </svg>
+          Generation &amp; Consumption
+        </button>
         <div className="h-5 w-px bg-gray-200 mx-1" />
         <div className="flex items-center gap-4 text-xs text-gray-500">
           <span data-testid="asset-count">
@@ -726,6 +738,7 @@ export function EnergyMap() {
       )}
 
       <DataPanel open={dataPanelOpen} onToggle={() => setDataPanelOpen((v) => !v)} />
+      {tableModalOpen && <TableModal onClose={() => setTableModalOpen(false)} />}
 
       {pendingMpan && (
         <AddMpanDialog
