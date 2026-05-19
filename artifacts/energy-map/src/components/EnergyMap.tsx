@@ -17,6 +17,7 @@ import { AddLabelDialog } from './AddLabelDialog';
 import { FreeLabel } from './FreeLabel';
 import { submaps } from '@/data/submaps';
 import mapImage from '@assets/Overview_1779198593346.png';
+import mcfcLogo from '@assets/images_(1)_1779205796102.png';
 
 const ALL_TYPES: AssetType[] = ['mpan', 'generation'];
 const STORAGE_KEY = 'energy-map-positions';
@@ -407,11 +408,7 @@ export function EnergyMap() {
     <div className="h-screen bg-slate-100 flex flex-col overflow-hidden">
       <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-4 shrink-0 shadow-sm">
         <div className="flex items-center gap-2.5">
-          <span className="w-7 h-7 rounded flex items-center justify-center" style={{ background: '#6CABDD' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-            </svg>
-          </span>
+          <img src={mcfcLogo} alt="MCFC Group" className="w-9 h-9 rounded-full object-contain" />
           <div>
             <h1 className="text-sm font-bold text-gray-900 leading-tight">MCFC Campus</h1>
             <p className="text-[10px] text-gray-500 leading-tight">Energy Asset Map</p>
