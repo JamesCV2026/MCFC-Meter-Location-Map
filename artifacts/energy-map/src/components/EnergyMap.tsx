@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Move, Lock, Unlock, Copy, Check, ZoomOut } from 'lucide-react';
+import { Move, Lock, Unlock, Copy, Check, ZoomOut, Plus } from 'lucide-react';
 import { assets as configAssets, EnergyAsset, AssetType } from '@/data/assets';
 import { sites, Site } from '@/data/sites';
 import { stickers as configStickers } from '@/data/stickers';
@@ -9,11 +9,24 @@ import { Legend } from './Legend';
 import { FilterPanel } from './FilterPanel';
 import { SiteLabel } from './SiteLabel';
 import { StickerOverlay, StickerTransform } from './StickerOverlay';
+import { AddMpanDialog } from './AddMpanDialog';
 import mapImage from '@assets/Overview_1779198593346.png';
 
 const ALL_TYPES: AssetType[] = ['mpan', 'generation'];
 const STORAGE_KEY = 'energy-map-positions';
 const STICKER_STORAGE_KEY = 'energy-map-sticker-transforms';
+const USER_ASSETS_KEY = 'energy-map-user-assets';
+
+function loadUserAssets(): EnergyAsset[] {
+  try {
+    const raw = localStorage.getItem(USER_ASSETS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveUserAssets(userAssets: EnergyAsset[]) {
+  localStorage.setItem(USER_ASSETS_KEY, JSON.stringify(userAssets));
+}
 
 function loadStickerTransforms(): Record<string, StickerTransform> {
   try {
@@ -54,7 +67,9 @@ function mergePositions(base: EnergyAsset[]): EnergyAsset[] {
 }
 
 export function EnergyMap() {
-  const [assets, setAssets] = useState<EnergyAsset[]>(() => mergePositions(configAssets));
+  const [assets, setAssets] = useState<EnergyAsset[]>(() => [...mergePositions(configAssets), ...loadUserAssets()]);
+  const [addMpanMode, setAddMpanMode] = useState(false);
+  const [pendingMpan, setPendingMpan] = useState<{ x: number; y: number } | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<EnergyAsset | null>(null);
   const [visibleTypes, setVisibleTypes] = useState<Set<AssetType>>(new Set(ALL_TYPES));
@@ -100,6 +115,40 @@ export function EnergyMap() {
   const handleDeselectSticker = useCallback(() => {
     setSelectedStickerId(null);
   }, []);
+
+  const handleAddMpanConfirm = useCallback((name: string, mpan: string, notes: string) => {
+    if (!pendingMpan) return;
+    const newAsset: EnergyAsset = {
+      id: `user-mpan-${Date.now()}`,
+      name,
+      type: 'mpan',
+      x: pendingMpan.x,
+      y: pendingMpan.y,
+      ...(mpan ? { mpan } : {}),
+      ...(notes ? { notes } : {}),
+    };
+    setAssets((prev) => {
+      const next = [...prev, newAsset];
+      // persist only the user-added assets
+      const userAssets = next.filter((a) => a.id.startsWith('user-mpan-'));
+      saveUserAssets(userAssets);
+      return next;
+    });
+    setPendingMpan(null);
+    setAddMpanMode(false);
+  }, [pendingMpan]);
+
+  const handleMapClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (addMpanMode && mapRef.current) {
+      e.stopPropagation();
+      const rect = mapRef.current.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      setPendingMpan({ x, y });
+      return;
+    }
+    handleDeselectSticker();
+  }, [addMpanMode, handleDeselectSticker]);
 
   const handleSiteClick = useCallback((site: Site) => {
     if (editMode) return;
@@ -152,6 +201,23 @@ export function EnergyMap() {
     setSelectedAsset(null);
     setHoveredId(null);
     setZoomedSite(null);
+    setAddMpanMode(false);
+    setPendingMpan(null);
+  };
+
+  const handleEnterAddMpan = () => {
+    setAddMpanMode(true);
+    setEditMode(false);
+    setLocked(false);
+    setSelectedAsset(null);
+    setHoveredId(null);
+    setZoomedSite(null);
+    setSelectedStickerId(null);
+  };
+
+  const handleCancelAddMpan = () => {
+    setAddMpanMode(false);
+    setPendingMpan(null);
   };
 
   const exportText = assets
@@ -202,7 +268,25 @@ export function EnergyMap() {
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          {zoomedSite && !editMode && (
+          {!editMode && !addMpanMode && (
+            <button
+              data-testid="btn-add-mpan"
+              onClick={handleEnterAddMpan}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors"
+            >
+              <Plus size={13} />
+              Add MPAN
+            </button>
+          )}
+          {addMpanMode && (
+            <button
+              onClick={handleCancelAddMpan}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+          )}
+          {zoomedSite && !editMode && !addMpanMode && (
             <button
               data-testid="btn-zoom-out"
               onClick={handleZoomOut}
@@ -276,13 +360,26 @@ export function EnergyMap() {
         </div>
       )}
 
+      {addMpanMode && (
+        <div className="bg-red-600 text-white px-6 py-2.5 flex items-center gap-3 text-xs font-medium">
+          <span className="w-2 h-2 rounded-full bg-white animate-pulse shrink-0" />
+          Click anywhere on the map to place a new MPAN marker
+          <button
+            onClick={handleCancelAddMpan}
+            className="ml-auto text-red-200 hover:text-white underline"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
       <main className="flex-1 flex items-start justify-center p-6">
         <div
           data-testid="map-container"
           ref={mapRef}
-          className={`relative w-full rounded-xl overflow-hidden shadow-xl border border-gray-200 bg-white ${editMode ? 'cursor-crosshair' : ''}`}
+          className={`relative w-full rounded-xl overflow-hidden shadow-xl border border-gray-200 bg-white ${editMode || addMpanMode ? 'cursor-crosshair' : ''}`}
           style={{ maxWidth: 1600 }}
-          onClick={handleDeselectSticker}
+          onClick={handleMapClick}
         >
           {/* Zoomable inner layer */}
           <div
@@ -409,6 +506,15 @@ export function EnergyMap() {
 
       {!editMode && (
         <SidePanel asset={selectedAsset} onClose={() => setSelectedAsset(null)} />
+      )}
+
+      {pendingMpan && (
+        <AddMpanDialog
+          x={pendingMpan.x}
+          y={pendingMpan.y}
+          onConfirm={handleAddMpanConfirm}
+          onCancel={() => setPendingMpan(null)}
+        />
       )}
     </div>
   );
