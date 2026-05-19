@@ -2,11 +2,13 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { Move, Lock, Unlock, Copy, Check, ZoomOut } from 'lucide-react';
 import { assets as configAssets, EnergyAsset, AssetType } from '@/data/assets';
 import { sites, Site } from '@/data/sites';
+import { stickers } from '@/data/stickers';
 import { MarkerTooltip } from './MarkerTooltip';
 import { SidePanel } from './SidePanel';
 import { Legend } from './Legend';
 import { FilterPanel } from './FilterPanel';
 import { SiteLabel } from './SiteLabel';
+import { StickerOverlay } from './StickerOverlay';
 import mapImage from '@assets/Overview_1779198593346.png';
 
 const ALL_TYPES: AssetType[] = ['mpan', 'generation'];
@@ -256,6 +258,11 @@ export function EnergyMap() {
               className="w-full h-auto block"
               draggable={false}
             />
+
+            {/* Image stickers — z-index 5, always below markers (z-index 20) */}
+            {!editMode && stickers.map((sticker) => (
+              <StickerOverlay key={sticker.id} sticker={sticker} />
+            ))}
 
             {/* Site labels — hidden in edit mode */}
             {!editMode && sites.map((site) => (
