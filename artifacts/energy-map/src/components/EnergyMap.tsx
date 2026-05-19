@@ -13,6 +13,7 @@ import { AddMpanDialog } from './AddMpanDialog';
 import { SubMapView } from './SubMapView';
 import { DataPanel } from './DataPanel';
 import { AddLabelDialog } from './AddLabelDialog';
+import { FreeLabel } from './FreeLabel';
 import { submaps } from '@/data/submaps';
 import mapImage from '@assets/Overview_1779198593346.png';
 
@@ -255,6 +256,14 @@ export function EnergyMap() {
     });
   }, []);
 
+  const handleUserSiteDelete = useCallback((id: string) => {
+    setUserSites((prev) => {
+      const next = prev.filter((s) => s.id !== id);
+      saveUserSites(next);
+      return next;
+    });
+  }, []);
+
   const handleMapClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (addMpanMode && mapRef.current) {
       e.stopPropagation();
@@ -423,7 +432,7 @@ export function EnergyMap() {
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          {!editMode && !addMpanMode && !labelEditMode && (
+          {!editMode && !addMpanMode && !addLabelMode && !labelEditMode && (
             <button
               data-testid="btn-add-mpan"
               onClick={handleEnterAddMpan}
@@ -433,33 +442,41 @@ export function EnergyMap() {
               Add MPAN
             </button>
           )}
-          {!editMode && !addMpanMode && !labelEditMode && (
+          {!editMode && !addMpanMode && !addLabelMode && !labelEditMode && (
+            <button
+              onClick={() => { setAddLabelMode(true); setPendingLabel(null); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border border-indigo-300 text-indigo-600 hover:bg-indigo-50 transition-colors"
+            >
+              <Tag size={13} />
+              Add label
+            </button>
+          )}
+          {addLabelMode && (
+            <button
+              onClick={() => { setAddLabelMode(false); setPendingLabel(null); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+          )}
+          {!editMode && !addMpanMode && !addLabelMode && !labelEditMode && userSites.length > 0 && (
             <button
               data-testid="btn-edit-labels"
               onClick={handleEnterLabelEdit}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 transition-colors"
             >
-              <Tag size={13} />
+              <Move size={13} />
               Edit labels
             </button>
           )}
           {labelEditMode && (
-            <>
-              <button
-                onClick={() => { setAddLabelMode((v) => !v); setPendingLabel(null); }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${addLabelMode ? 'bg-indigo-100 text-indigo-700 border border-indigo-300' : 'border border-indigo-300 text-indigo-600 hover:bg-indigo-50'}`}
-              >
-                <Plus size={13} />
-                Add label
-              </button>
-              <button
-                onClick={() => { setLabelEditMode(false); setAddLabelMode(false); setPendingLabel(null); }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
-              >
-                <Check size={13} />
-                Done editing labels
-              </button>
-            </>
+            <button
+              onClick={() => { setLabelEditMode(false); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+            >
+              <Check size={13} />
+              Done editing labels
+            </button>
           )}
           {addMpanMode && (
             <button
@@ -614,16 +631,15 @@ export function EnergyMap() {
               />
             ))}
 
-            {/* User-added labels */}
-            {!editMode && userSites.map((site) => (
-              <SiteLabel
+            {/* User-added free labels */}
+            {userSites.map((site) => (
+              <FreeLabel
                 key={site.id}
                 site={site}
                 mapRef={mapRef}
-                onClick={handleSiteClick}
+                editMode={labelEditMode}
                 onUpdate={handleUserSiteLabelUpdate}
-                active={zoomedSite?.id === site.id}
-                labelEditMode={labelEditMode}
+                onDelete={handleUserSiteDelete}
               />
             ))}
 
