@@ -124,7 +124,7 @@ export function StickerOverlay({
   return (
     <div
       data-testid={`sticker-${id}`}
-      className="absolute"
+      className="absolute group"
       style={{
         left: `${x}%`,
         top: `${y}%`,
@@ -138,7 +138,7 @@ export function StickerOverlay({
       <img
         src={src}
         alt={label}
-        className="w-full h-auto block"
+        className={`w-full h-auto block transition-transform duration-200 ease-out${selected ? '' : ' group-hover:scale-110'}`}
         draggable={false}
         style={{ cursor: selected ? 'default' : 'pointer' }}
       />
