@@ -38,14 +38,6 @@ export const assets: EnergyAsset[] = [
     mpan: '1013000000003',
   },
   {
-    id: 'mpan-04',
-    name: 'MPAN 04 — Training Pitches West',
-    type: 'mpan',
-    x: 27,
-    y: 30,
-    mpan: '1013000000004',
-  },
-  {
     id: 'mpan-05',
     name: 'MPAN 05 — Stadium West',
     type: 'mpan',
