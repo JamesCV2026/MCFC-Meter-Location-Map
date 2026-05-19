@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ChevronUp, ChevronDown, Zap, Sun } from 'lucide-react';
 
 const HEADER_BG = '#1b3a6b';
-const TOTAL_BG = '#1a7a44';
+const TOTAL_BG = '#1b3a6b';
 const ROW_ALT = '#f0f4f8';
 
 const consumptionData = [
