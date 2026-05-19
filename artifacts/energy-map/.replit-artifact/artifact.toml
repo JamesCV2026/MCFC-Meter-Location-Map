@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Etihad Campus Energy Map"
+version = "1.0.0"
+id = "artifacts/energy-map"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23596
+
+[services.development]
+run = "pnpm --filter @workspace/energy-map run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/energy-map", "run", "build" ]
+publicDir = "artifacts/energy-map/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23596"
+BASE_PATH = "/"
