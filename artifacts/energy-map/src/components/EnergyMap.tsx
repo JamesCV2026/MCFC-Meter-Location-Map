@@ -48,6 +48,19 @@ function initStickerTransforms(): Record<string, StickerTransform> {
   return result;
 }
 
+const DELETED_STICKERS_KEY = 'energy-map-deleted-stickers';
+
+function loadDeletedStickers(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DELETED_STICKERS_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch { return new Set(); }
+}
+
+function saveDeletedStickers(ids: Set<string>) {
+  localStorage.setItem(DELETED_STICKERS_KEY, JSON.stringify([...ids]));
+}
+
 const SITE_OVERRIDES_KEY = 'energy-map-site-overrides';
 
 function loadSiteOverrides(): Record<string, Partial<Site>> {
@@ -99,6 +112,7 @@ export function EnergyMap() {
   const [zoomedSite, setZoomedSite] = useState<Site | null>(null);
   const [stickerTransforms, setStickerTransforms] = useState<Record<string, StickerTransform>>(() => initStickerTransforms());
   const [selectedStickerId, setSelectedStickerId] = useState<string | null>(null);
+  const [deletedStickerIds, setDeletedStickerIds] = useState<Set<string>>(() => loadDeletedStickers());
 
   const mapRef = useRef<HTMLDivElement>(null);
   const draggingRef = useRef<{ id: string; startX: number; startY: number } | null>(null);
@@ -130,6 +144,16 @@ export function EnergyMap() {
     setSelectedStickerId(id);
     setHoveredId(null);
     setSelectedAsset(null);
+  }, []);
+
+  const handleStickerDelete = useCallback((id: string) => {
+    setDeletedStickerIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      saveDeletedStickers(next);
+      return next;
+    });
+    setSelectedStickerId(null);
   }, []);
 
   const handleDeselectSticker = useCallback(() => {
@@ -470,7 +494,7 @@ export function EnergyMap() {
             />
 
             {/* Image stickers — z-index 5, always below markers (z-index 20) */}
-            {!editMode && configStickers.map((sticker) => {
+            {!editMode && configStickers.filter((s) => !deletedStickerIds.has(s.id)).map((sticker) => {
               const transform = stickerTransforms[sticker.id];
               if (!transform) return null;
               return (
@@ -484,6 +508,7 @@ export function EnergyMap() {
                   selected={selectedStickerId === sticker.id}
                   onSelect={() => handleStickerSelect(sticker.id)}
                   onUpdate={(updates) => handleStickerUpdate(sticker.id, updates)}
+                  onDelete={() => handleStickerDelete(sticker.id)}
                 />
               );
             })}

@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import { RotateCw, Maximize2, Move } from 'lucide-react';
+import { RotateCw, Maximize2, Move, Trash2 } from 'lucide-react';
 
 export interface StickerTransform {
   x: number;
@@ -17,6 +17,7 @@ interface StickerOverlayProps {
   selected: boolean;
   onSelect: () => void;
   onUpdate: (updates: Partial<StickerTransform>) => void;
+  onDelete: () => void;
 }
 
 type DragMode = 'move' | 'resize' | 'rotate' | null;
@@ -32,9 +33,8 @@ interface DragState {
 }
 
 export function StickerOverlay({
-  id, label, src, transform, mapRef, selected, onSelect, onUpdate,
+  id, label, src, transform, mapRef, selected, onSelect, onUpdate, onDelete,
 }: StickerOverlayProps) {
-  // Keep a ref to always-current values so closures never go stale
   const transformRef = useRef(transform);
   transformRef.current = transform;
 
@@ -117,7 +117,7 @@ export function StickerOverlay({
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
     };
-  }, []); // empty — closures use refs so always fresh
+  }, []);
 
   const { x, y, width, rotation } = transform;
 
@@ -165,6 +165,16 @@ export function StickerOverlay({
               <Move size={13} className="text-indigo-600" />
             </div>
             <div className="w-px h-2 bg-indigo-300 opacity-60" />
+          </div>
+
+          {/* Delete handle — top right */}
+          <div
+            className="absolute w-6 h-6 rounded-full bg-red-500 border-2 border-white shadow-md flex items-center justify-center cursor-pointer hover:bg-red-600 transition-colors"
+            style={{ top: -12, right: -12 }}
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            title="Delete sticker"
+          >
+            <Trash2 size={10} className="text-white" />
           </div>
 
           {/* Rotate handle — bottom-left */}
