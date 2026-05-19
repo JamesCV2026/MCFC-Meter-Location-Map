@@ -1,8 +1,10 @@
+import { Trash2 } from 'lucide-react';
 import { EnergyAsset } from '@/data/assets';
 
 interface MarkerTooltipProps {
   asset: EnergyAsset;
   onViewData: () => void;
+  onDelete: () => void;
   flipDown?: boolean;
 }
 
@@ -11,7 +13,7 @@ function fmt(n: number | undefined) {
   return n.toLocaleString('en-GB') + ' kWh';
 }
 
-export function MarkerTooltip({ asset, onViewData, flipDown = false }: MarkerTooltipProps) {
+export function MarkerTooltip({ asset, onViewData, onDelete, flipDown = false }: MarkerTooltipProps) {
   return (
     <div
       data-testid={`tooltip-${asset.id}`}
@@ -55,13 +57,24 @@ export function MarkerTooltip({ asset, onViewData, flipDown = false }: MarkerToo
               <span className="text-gray-200 text-xs font-medium">{fmt(asset.consumption_kwh)}</span>
             </div>
           </div>
-          <button
-            data-testid={`tooltip-view-${asset.id}`}
-            onClick={(e) => { e.stopPropagation(); onViewData(); }}
-            className="text-xs text-red-400 hover:text-red-300 transition-colors font-medium"
-          >
-            View data →
-          </button>
+          <div className="flex items-center justify-between gap-3">
+            <button
+              data-testid={`tooltip-view-${asset.id}`}
+              onClick={(e) => { e.stopPropagation(); onViewData(); }}
+              className="text-xs text-red-400 hover:text-red-300 transition-colors font-medium"
+            >
+              View data →
+            </button>
+            <button
+              data-testid={`tooltip-delete-${asset.id}`}
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-400 transition-colors"
+              title="Remove MPAN"
+            >
+              <Trash2 size={11} />
+              Remove
+            </button>
+          </div>
         </div>
       </div>
 

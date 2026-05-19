@@ -188,6 +188,16 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
     });
   }, [subMapId]);
 
+  const handleDeleteAsset = useCallback((id: string) => {
+    setAssets((prev) => {
+      const next = prev.filter((a) => a.id !== id);
+      saveAssets(subMapId, next);
+      return next;
+    });
+    setSelectedAsset((prev) => prev?.id === id ? null : prev);
+    setHoveredId((prev) => prev === id ? null : prev);
+  }, [subMapId]);
+
   const handleMapClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (addMpanMode && mapRef.current) {
       e.stopPropagation();
@@ -482,7 +492,7 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
                 )}
 
                 {!editMode && isHovered && (
-                  <MarkerTooltip asset={asset} onViewData={() => handleOpen(asset)} flipDown={asset.y < 25} />
+                  <MarkerTooltip asset={asset} onViewData={() => handleOpen(asset)} onDelete={() => handleDeleteAsset(asset.id)} flipDown={asset.y < 25} />
                 )}
               </div>
             );

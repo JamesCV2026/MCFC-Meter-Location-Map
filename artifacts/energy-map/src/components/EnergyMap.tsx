@@ -68,6 +68,19 @@ function saveDeletedStickers(ids: Set<string>) {
   localStorage.setItem(DELETED_STICKERS_KEY, JSON.stringify([...ids]));
 }
 
+const DELETED_ASSETS_KEY = 'energy-map-deleted-assets';
+
+function loadDeletedAssets(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DELETED_ASSETS_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch { return new Set(); }
+}
+
+function saveDeletedAssets(ids: Set<string>) {
+  localStorage.setItem(DELETED_ASSETS_KEY, JSON.stringify([...ids]));
+}
+
 const SITE_OVERRIDES_KEY = 'energy-map-site-overrides';
 
 function loadSiteOverrides(): Record<string, Partial<Site>> {
@@ -140,6 +153,7 @@ export function EnergyMap() {
   const [stickerTransforms, setStickerTransforms] = useState<Record<string, StickerTransform>>(() => initStickerTransforms());
   const [selectedStickerId, setSelectedStickerId] = useState<string | null>(null);
   const [deletedStickerIds, setDeletedStickerIds] = useState<Set<string>>(() => loadDeletedStickers());
+  const [deletedAssetIds, setDeletedAssetIds] = useState<Set<string>>(() => loadDeletedAssets());
 
   const mapRef = useRef<HTMLDivElement>(null);
 
@@ -398,7 +412,28 @@ export function EnergyMap() {
     );
   }
 
-  const visibleAssets = assets.filter((a) => visibleTypes.has(a.type));
+  const handleDeleteAsset = useCallback((id: string) => {
+    setAssets((prev) => {
+      const isUserAsset = id.startsWith('user-mpan-');
+      if (isUserAsset) {
+        const next = prev.filter((a) => a.id !== id);
+        saveUserAssets(next.filter((a) => a.id.startsWith('user-mpan-')));
+        return next;
+      }
+      // Config asset — track as deleted
+      setDeletedAssetIds((prevDel) => {
+        const next = new Set(prevDel);
+        next.add(id);
+        saveDeletedAssets(next);
+        return next;
+      });
+      return prev;
+    });
+    setSelectedAsset((prev) => prev?.id === id ? null : prev);
+    setHoveredId((prev) => prev === id ? null : prev);
+  }, []);
+
+  const visibleAssets = assets.filter((a) => visibleTypes.has(a.type) && !deletedAssetIds.has(a.id));
 
   const zoomScale = zoomedSite?.zoom ?? 1;
   const zoomOriginX = zoomedSite?.x ?? 50;
@@ -705,7 +740,7 @@ export function EnergyMap() {
                   )}
 
                   {!editMode && isHovered && (
-                    <MarkerTooltip asset={asset} onViewData={() => handleOpen(asset)} flipDown={asset.y < 25} />
+                    <MarkerTooltip asset={asset} onViewData={() => handleOpen(asset)} onDelete={() => handleDeleteAsset(asset.id)} flipDown={asset.y < 25} />
                   )}
                 </div>
               );
