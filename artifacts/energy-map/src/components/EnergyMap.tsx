@@ -411,7 +411,7 @@ export function EnergyMap() {
             </svg>
           </span>
           <div>
-            <h1 className="text-sm font-bold text-gray-900 leading-tight">Etihad Campus</h1>
+            <h1 className="text-sm font-bold text-gray-900 leading-tight">MCFC Campus</h1>
             <p className="text-[10px] text-gray-500 leading-tight">Energy Asset Map</p>
           </div>
         </div>
