@@ -1,4 +1,4 @@
-import { Zap, Sun } from 'lucide-react';
+import { Zap } from 'lucide-react';
 import { AssetType } from '@/data/assets';
 
 interface FilterPanelProps {
@@ -8,7 +8,6 @@ interface FilterPanelProps {
 
 const filterItems: { type: AssetType; label: string; Icon: React.ComponentType<{ size?: number; className?: string }> }[] = [
   { type: 'mpan', label: 'MPAN', Icon: Zap },
-  { type: 'generation', label: 'Generation', Icon: Sun },
 ];
 
 export function FilterPanel({ visible, onChange }: FilterPanelProps) {
