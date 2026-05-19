@@ -1,6 +1,6 @@
 import map11 from '@assets/11_1779202631496.png';
-import map22 from '@assets/22_1779202631496.png';
-import map33 from '@assets/33_1779202631495.png';
+import map22 from '@assets/22_1779203337354.png';
+import map33 from '@assets/33_1779203337354.png';
 
 export interface SubMap {
   id: string;
@@ -10,8 +10,8 @@ export interface SubMap {
 
 export const submaps: SubMap[] = [
   { id: 'etihad-stadium-map', name: 'Etihad Stadium', image: map11 },
-  { id: 'cfa-map', name: 'City Football Academy', image: map33 },
-  { id: 'co-op-live-map', name: 'Co-op Live', image: map22 },
+  { id: 'cfa-map', name: 'City Football Academy', image: map22 },
+  { id: 'co-op-live-map', name: 'Co-op Live', image: map33 },
 ];
 
 export function getSubMap(id: string): SubMap | undefined {
