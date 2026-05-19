@@ -1,4 +1,4 @@
-import { Zap, Activity, Building2, Sun } from 'lucide-react';
+import { Zap, Sun } from 'lucide-react';
 import { AssetType } from '@/data/assets';
 
 interface LegendItem {
@@ -10,8 +10,6 @@ interface LegendItem {
 
 const items: LegendItem[] = [
   { type: 'mpan', label: 'MPAN', color: '#dc2626', Icon: Zap },
-  { type: 'transformer', label: 'Transformer', color: '#ea580c', Icon: Activity },
-  { type: 'substation', label: 'Substation', color: '#2563eb', Icon: Building2 },
   { type: 'generation', label: 'Generation', color: '#16a34a', Icon: Sun },
 ];
 

@@ -7,7 +7,7 @@ import { Legend } from './Legend';
 import { FilterPanel } from './FilterPanel';
 import mapImage from '@assets/Overview_1779198593346.png';
 
-const ALL_TYPES: AssetType[] = ['mpan', 'transformer', 'substation', 'generation'];
+const ALL_TYPES: AssetType[] = ['mpan', 'generation'];
 const STORAGE_KEY = 'energy-map-positions';
 
 function loadPositions(): Record<string, { x: number; y: number }> {
