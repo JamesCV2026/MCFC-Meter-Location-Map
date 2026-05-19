@@ -10,6 +10,7 @@ import { FilterPanel } from './FilterPanel';
 import { SiteLabel } from './SiteLabel';
 import { StickerOverlay, StickerTransform } from './StickerOverlay';
 import { AddMpanDialog } from './AddMpanDialog';
+import { SubMapView } from './SubMapView';
 import mapImage from '@assets/Overview_1779198593346.png';
 
 const ALL_TYPES: AssetType[] = ['mpan', 'generation'];
@@ -110,6 +111,7 @@ export function EnergyMap() {
   const [locked, setLocked] = useState(false);
   const [copied, setCopied] = useState(false);
   const [zoomedSite, setZoomedSite] = useState<Site | null>(null);
+  const [activeSubMapId, setActiveSubMapId] = useState<string | null>(null);
   const [stickerTransforms, setStickerTransforms] = useState<Record<string, StickerTransform>>(() => initStickerTransforms());
   const [selectedStickerId, setSelectedStickerId] = useState<string | null>(null);
   const [deletedStickerIds, setDeletedStickerIds] = useState<Set<string>>(() => loadDeletedStickers());
@@ -213,11 +215,15 @@ export function EnergyMap() {
   }, [addMpanMode, handleDeselectSticker]);
 
   const handleSiteClick = useCallback((site: Site) => {
-    if (editMode) return;
+    if (editMode || labelEditMode) return;
+    if (site.subMapId) {
+      setActiveSubMapId(site.subMapId);
+      return;
+    }
     setZoomedSite((prev) => prev?.id === site.id ? null : site);
     setHoveredId(null);
     setSelectedAsset(null);
-  }, [editMode]);
+  }, [editMode, labelEditMode]);
 
   const handleZoomOut = useCallback(() => {
     setZoomedSite(null);
@@ -306,6 +312,10 @@ export function EnergyMap() {
       setTimeout(() => setCopied(false), 2000);
     });
   };
+
+  if (activeSubMapId) {
+    return <SubMapView subMapId={activeSubMapId} onBack={() => setActiveSubMapId(null)} />;
+  }
 
   const visibleAssets = assets.filter((a) => visibleTypes.has(a.type));
 

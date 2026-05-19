@@ -4,6 +4,7 @@ export interface Site {
   x: number;
   y: number;
   zoom?: number;
+  subMapId?: string;
 }
 
 export const sites: Site[] = [
@@ -13,6 +14,7 @@ export const sites: Site[] = [
     x: 38,
     y: 40,
     zoom: 2.8,
+    subMapId: 'etihad-stadium-map',
   },
   {
     id: 'cfa',
@@ -20,6 +22,7 @@ export const sites: Site[] = [
     x: 22,
     y: 32,
     zoom: 2.8,
+    subMapId: 'cfa-map',
   },
   {
     id: 'co-op-live',
@@ -27,5 +30,6 @@ export const sites: Site[] = [
     x: 28,
     y: 18,
     zoom: 2.8,
+    subMapId: 'co-op-live-map',
   },
 ];

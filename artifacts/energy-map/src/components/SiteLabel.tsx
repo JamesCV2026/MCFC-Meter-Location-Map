@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { MapPin, ZoomIn, ZoomOut, GripHorizontal, Pencil, Check } from 'lucide-react';
+import { MapPin, ArrowRight, ZoomIn, ZoomOut, GripHorizontal, Pencil, Check } from 'lucide-react';
 import { Site } from '@/data/sites';
 
 interface SiteLabelProps {
@@ -141,9 +141,11 @@ export function SiteLabel({ site, mapRef, onClick, onUpdate, active = false, lab
           <span className={`text-[11px] font-semibold leading-none ${active ? 'text-white' : 'text-gray-800'}`}>
             {site.name}
           </span>
-          {active
-            ? <ZoomOut size={10} className="text-blue-200 shrink-0 ml-0.5" />
-            : <ZoomIn size={10} className="text-gray-400 group-hover:text-blue-500 transition-colors shrink-0 ml-0.5" />
+          {site.subMapId
+            ? <ArrowRight size={10} className={active ? 'text-blue-200 shrink-0 ml-0.5' : 'text-gray-400 group-hover:text-blue-500 transition-colors shrink-0 ml-0.5'} />
+            : active
+              ? <ZoomOut size={10} className="text-blue-200 shrink-0 ml-0.5" />
+              : <ZoomIn size={10} className="text-gray-400 group-hover:text-blue-500 transition-colors shrink-0 ml-0.5" />
           }
         </button>
       )}
