@@ -11,6 +11,8 @@ import { SiteLabel } from './SiteLabel';
 import { StickerOverlay, StickerTransform } from './StickerOverlay';
 import { AddMpanDialog } from './AddMpanDialog';
 import { SubMapView } from './SubMapView';
+import { DataPanel } from './DataPanel';
+import { AddLabelDialog } from './AddLabelDialog';
 import { submaps } from '@/data/submaps';
 import mapImage from '@assets/Overview_1779198593346.png';
 
@@ -76,6 +78,19 @@ function saveSiteOverrides(overrides: Record<string, Partial<Site>>) {
   localStorage.setItem(SITE_OVERRIDES_KEY, JSON.stringify(overrides));
 }
 
+const USER_SITES_KEY = 'energy-map-user-sites';
+
+function loadUserSites(): Site[] {
+  try {
+    const raw = localStorage.getItem(USER_SITES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveUserSites(sites: Site[]) {
+  localStorage.setItem(USER_SITES_KEY, JSON.stringify(sites));
+}
+
 function initSites(): Site[] {
   const overrides = loadSiteOverrides();
   return configSites.map((s) => ({ ...s, ...overrides[s.id] }));
@@ -112,6 +127,10 @@ export function EnergyMap() {
   const [locked, setLocked] = useState(false);
   const [copied, setCopied] = useState(false);
   const [zoomedSite, setZoomedSite] = useState<Site | null>(null);
+  const [userSites, setUserSites] = useState<Site[]>(() => loadUserSites());
+  const [addLabelMode, setAddLabelMode] = useState(false);
+  const [pendingLabel, setPendingLabel] = useState<{ x: number; y: number } | null>(null);
+  const [dataPanelOpen, setDataPanelOpen] = useState(true);
   const [activeSubMapId, setActiveSubMapId] = useState<string | null>(null);
   const [subMapOrigin, setSubMapOrigin] = useState({ x: 50, y: 50 });
   const [stickerTransforms, setStickerTransforms] = useState<Record<string, StickerTransform>>(() => initStickerTransforms());
@@ -211,6 +230,31 @@ export function EnergyMap() {
     setAddMpanMode(false);
   }, [pendingMpan]);
 
+  const handleAddLabelConfirm = useCallback((name: string) => {
+    if (!pendingLabel) return;
+    const newSite: Site = {
+      id: `user-site-${Date.now()}`,
+      name,
+      x: pendingLabel.x,
+      y: pendingLabel.y,
+    };
+    setUserSites((prev) => {
+      const next = [...prev, newSite];
+      saveUserSites(next);
+      return next;
+    });
+    setPendingLabel(null);
+    setAddLabelMode(false);
+  }, [pendingLabel]);
+
+  const handleUserSiteLabelUpdate = useCallback((id: string, updates: Partial<Site>) => {
+    setUserSites((prev) => {
+      const next = prev.map((s) => s.id === id ? { ...s, ...updates } : s);
+      saveUserSites(next);
+      return next;
+    });
+  }, []);
+
   const handleMapClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (addMpanMode && mapRef.current) {
       e.stopPropagation();
@@ -220,8 +264,16 @@ export function EnergyMap() {
       setPendingMpan({ x, y });
       return;
     }
+    if (addLabelMode && mapRef.current) {
+      e.stopPropagation();
+      const rect = mapRef.current.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      setPendingLabel({ x, y });
+      return;
+    }
     handleDeselectSticker();
-  }, [addMpanMode, handleDeselectSticker]);
+  }, [addMpanMode, addLabelMode, handleDeselectSticker]);
 
   const handleSiteClick = useCallback((site: Site) => {
     if (editMode || labelEditMode) return;
@@ -341,7 +393,7 @@ export function EnergyMap() {
   const zoomOriginY = zoomedSite?.y ?? 50;
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col">
+    <div className="h-screen bg-slate-100 flex flex-col overflow-hidden">
       <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-4 shrink-0 shadow-sm">
         <div className="flex items-center gap-2.5">
           <span className="w-7 h-7 rounded flex items-center justify-center" style={{ background: '#6CABDD' }}>
@@ -392,13 +444,22 @@ export function EnergyMap() {
             </button>
           )}
           {labelEditMode && (
-            <button
-              onClick={() => setLabelEditMode(false)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
-            >
-              <Check size={13} />
-              Done editing labels
-            </button>
+            <>
+              <button
+                onClick={() => { setAddLabelMode((v) => !v); setPendingLabel(null); }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${addLabelMode ? 'bg-indigo-100 text-indigo-700 border border-indigo-300' : 'border border-indigo-300 text-indigo-600 hover:bg-indigo-50'}`}
+              >
+                <Plus size={13} />
+                Add label
+              </button>
+              <button
+                onClick={() => { setLabelEditMode(false); setAddLabelMode(false); setPendingLabel(null); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+              >
+                <Check size={13} />
+                Done editing labels
+              </button>
+            </>
           )}
           {addMpanMode && (
             <button
@@ -553,6 +614,19 @@ export function EnergyMap() {
               />
             ))}
 
+            {/* User-added labels */}
+            {!editMode && userSites.map((site) => (
+              <SiteLabel
+                key={site.id}
+                site={site}
+                mapRef={mapRef}
+                onClick={handleSiteClick}
+                onUpdate={handleUserSiteLabelUpdate}
+                active={zoomedSite?.id === site.id}
+                labelEditMode={labelEditMode}
+              />
+            ))}
+
             {/* Asset markers */}
             {visibleAssets.map((asset) => {
               const isHovered = hoveredId === asset.id;
@@ -634,12 +708,23 @@ export function EnergyMap() {
         <SidePanel asset={selectedAsset} onClose={() => setSelectedAsset(null)} />
       )}
 
+      <DataPanel open={dataPanelOpen} onToggle={() => setDataPanelOpen((v) => !v)} />
+
       {pendingMpan && (
         <AddMpanDialog
           x={pendingMpan.x}
           y={pendingMpan.y}
           onConfirm={handleAddMpanConfirm}
           onCancel={() => setPendingMpan(null)}
+        />
+      )}
+
+      {pendingLabel && (
+        <AddLabelDialog
+          x={pendingLabel.x}
+          y={pendingLabel.y}
+          onConfirm={handleAddLabelConfirm}
+          onCancel={() => setPendingLabel(null)}
         />
       )}
     </div>
