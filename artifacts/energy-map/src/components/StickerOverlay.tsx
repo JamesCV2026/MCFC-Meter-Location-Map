@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import { RotateCw, Maximize2 } from 'lucide-react';
+import { RotateCw, Maximize2, Move } from 'lucide-react';
 
 export interface StickerTransform {
   x: number;
@@ -28,23 +28,29 @@ interface DragState {
   startX: number;
   startY: number;
   startWidth: number;
-  startRotation: number;
   startDist: number;
 }
 
 export function StickerOverlay({
   id, label, src, transform, mapRef, selected, onSelect, onUpdate,
 }: StickerOverlayProps) {
-  const { x, y, width, rotation } = transform;
+  // Keep a ref to always-current values so closures never go stale
+  const transformRef = useRef(transform);
+  transformRef.current = transform;
+
+  const onUpdateRef = useRef(onUpdate);
+  onUpdateRef.current = onUpdate;
+
   const dragState = useRef<DragState | null>(null);
 
   function getMapRect() {
     return mapRef.current?.getBoundingClientRect() ?? null;
   }
 
-  function getStickerCenterPx() {
+  function getStickerCenter() {
     const rect = getMapRect();
     if (!rect) return { cx: 0, cy: 0 };
+    const { x, y } = transformRef.current;
     return {
       cx: rect.left + (x / 100) * rect.width,
       cy: rect.top + (y / 100) * rect.height,
@@ -57,12 +63,11 @@ export function StickerOverlay({
     onSelect();
     const rect = getMapRect();
     if (!rect) return;
-
-    const { cx, cy } = getStickerCenterPx();
+    const { x, y, width } = transformRef.current;
+    const { cx, cy } = getStickerCenter();
     const dx = e.clientX - cx;
     const dy = e.clientY - cy;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
     dragState.current = {
       mode,
       startMouseX: e.clientX,
@@ -70,8 +75,7 @@ export function StickerOverlay({
       startX: x,
       startY: y,
       startWidth: width,
-      startRotation: rotation,
-      startDist: dist || 1,
+      startDist: dist,
     };
   }
 
@@ -85,21 +89,21 @@ export function StickerOverlay({
       if (state.mode === 'move') {
         const dxPct = ((e.clientX - state.startMouseX) / rect.width) * 100;
         const dyPct = ((e.clientY - state.startMouseY) / rect.height) * 100;
-        onUpdate({
+        onUpdateRef.current({
           x: Math.max(0, Math.min(100, state.startX + dxPct)),
           y: Math.max(0, Math.min(100, state.startY + dyPct)),
         });
       } else if (state.mode === 'resize') {
-        const { cx, cy } = getStickerCenterPx();
+        const { cx, cy } = getStickerCenter();
         const dx = e.clientX - cx;
         const dy = e.clientY - cy;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
         const newWidth = Math.max(3, Math.min(50, state.startWidth * (dist / state.startDist)));
-        onUpdate({ width: newWidth });
+        onUpdateRef.current({ width: newWidth });
       } else if (state.mode === 'rotate') {
-        const { cx, cy } = getStickerCenterPx();
+        const { cx, cy } = getStickerCenter();
         const angle = Math.atan2(e.clientY - cy, e.clientX - cx) * (180 / Math.PI) + 90;
-        onUpdate({ rotation: angle });
+        onUpdateRef.current({ rotation: angle });
       }
     }
 
@@ -113,7 +117,9 @@ export function StickerOverlay({
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
     };
-  }, [x, y, width, rotation]);
+  }, []); // empty — closures use refs so always fresh
+
+  const { x, y, width, rotation } = transform;
 
   return (
     <div
@@ -124,66 +130,67 @@ export function StickerOverlay({
         top: `${y}%`,
         width: `${width}%`,
         transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
-        zIndex: 5,
+        zIndex: selected ? 8 : 5,
         userSelect: 'none',
-        cursor: selected ? 'move' : 'pointer',
-      }}
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget || (e.target as HTMLElement).tagName === 'IMG') {
-          startDrag(e, 'move');
-        }
       }}
       onClick={(e) => { e.stopPropagation(); onSelect(); }}
     >
       <img
         src={src}
         alt={label}
-        className="w-full h-auto block pointer-events-none"
+        className="w-full h-auto block"
         draggable={false}
-        onMouseDown={(e) => startDrag(e, 'move')}
+        style={{ cursor: selected ? 'default' : 'pointer' }}
       />
 
       {selected && (
         <>
           {/* Dashed selection border */}
           <div
-            className="absolute inset-0 rounded-sm pointer-events-none"
-            style={{
-              border: '2px dashed rgba(99,102,241,0.7)',
-              boxShadow: '0 0 0 1px rgba(99,102,241,0.2)',
-            }}
+            className="absolute inset-0 rounded pointer-events-none"
+            style={{ border: '2px dashed rgba(99,102,241,0.75)' }}
           />
 
-          {/* Rotate handle — above top-center */}
+          {/* Move handle — centre top */}
           <div
             className="absolute flex flex-col items-center"
-            style={{ top: -36, left: '50%', transform: 'translateX(-50%)' }}
+            style={{ top: -38, left: '50%', transform: 'translateX(-50%)' }}
           >
             <div
-              className="w-6 h-6 rounded-full bg-indigo-500 border-2 border-white shadow-lg flex items-center justify-center cursor-grab active:cursor-grabbing"
-              onMouseDown={(e) => startDrag(e, 'rotate')}
-              title="Rotate"
+              className="w-7 h-7 rounded-full bg-white border-2 border-indigo-400 shadow-lg flex items-center justify-center cursor-move"
+              style={{ touchAction: 'none' }}
+              onMouseDown={(e) => startDrag(e, 'move')}
+              title="Move"
             >
-              <RotateCw size={11} className="text-white" />
+              <Move size={13} className="text-indigo-600" />
             </div>
-            {/* Connector line */}
-            <div className="w-px h-2 bg-indigo-400 opacity-60" />
+            <div className="w-px h-2 bg-indigo-300 opacity-60" />
           </div>
 
-          {/* Resize handle — bottom-right corner */}
+          {/* Rotate handle — bottom-left */}
           <div
-            className="absolute w-5 h-5 rounded-sm bg-indigo-500 border-2 border-white shadow-md flex items-center justify-center cursor-nwse-resize"
-            style={{ bottom: -10, right: -10 }}
+            className="absolute w-6 h-6 rounded-full bg-indigo-500 border-2 border-white shadow-md flex items-center justify-center cursor-grab"
+            style={{ bottom: -12, left: -12, touchAction: 'none' }}
+            onMouseDown={(e) => startDrag(e, 'rotate')}
+            title="Rotate"
+          >
+            <RotateCw size={10} className="text-white" />
+          </div>
+
+          {/* Resize handle — bottom-right */}
+          <div
+            className="absolute w-6 h-6 rounded-sm bg-indigo-500 border-2 border-white shadow-md flex items-center justify-center cursor-nwse-resize"
+            style={{ bottom: -12, right: -12, touchAction: 'none' }}
             onMouseDown={(e) => startDrag(e, 'resize')}
             title="Resize"
           >
-            <Maximize2 size={9} className="text-white" />
+            <Maximize2 size={10} className="text-white" />
           </div>
 
           {/* Label */}
           <div
             className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
-            style={{ bottom: -22 }}
+            style={{ bottom: -26 }}
           >
             <span className="text-[10px] font-semibold text-indigo-700 bg-white/90 rounded px-1.5 py-0.5 shadow whitespace-nowrap">
               {label}
