@@ -28,11 +28,4 @@ export const sites: Site[] = [
     y: 18,
     zoom: 2.8,
   },
-  {
-    id: 'eastern-campus',
-    name: 'Eastern Campus',
-    x: 60,
-    y: 50,
-    zoom: 2.5,
-  },
 ];
