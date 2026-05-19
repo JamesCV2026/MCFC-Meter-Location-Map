@@ -2,17 +2,38 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { Move, Lock, Unlock, Copy, Check, ZoomOut } from 'lucide-react';
 import { assets as configAssets, EnergyAsset, AssetType } from '@/data/assets';
 import { sites, Site } from '@/data/sites';
-import { stickers } from '@/data/stickers';
+import { stickers as configStickers } from '@/data/stickers';
 import { MarkerTooltip } from './MarkerTooltip';
 import { SidePanel } from './SidePanel';
 import { Legend } from './Legend';
 import { FilterPanel } from './FilterPanel';
 import { SiteLabel } from './SiteLabel';
-import { StickerOverlay } from './StickerOverlay';
+import { StickerOverlay, StickerTransform } from './StickerOverlay';
 import mapImage from '@assets/Overview_1779198593346.png';
 
 const ALL_TYPES: AssetType[] = ['mpan', 'generation'];
 const STORAGE_KEY = 'energy-map-positions';
+const STICKER_STORAGE_KEY = 'energy-map-sticker-transforms';
+
+function loadStickerTransforms(): Record<string, StickerTransform> {
+  try {
+    const raw = localStorage.getItem(STICKER_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function saveStickerTransforms(transforms: Record<string, StickerTransform>) {
+  localStorage.setItem(STICKER_STORAGE_KEY, JSON.stringify(transforms));
+}
+
+function initStickerTransforms(): Record<string, StickerTransform> {
+  const saved = loadStickerTransforms();
+  const result: Record<string, StickerTransform> = {};
+  configStickers.forEach((s) => {
+    result[s.id] = saved[s.id] ?? { x: s.x, y: s.y, width: s.width, rotation: s.rotation };
+  });
+  return result;
+}
 
 function loadPositions(): Record<string, { x: number; y: number }> {
   try {
@@ -41,6 +62,8 @@ export function EnergyMap() {
   const [locked, setLocked] = useState(false);
   const [copied, setCopied] = useState(false);
   const [zoomedSite, setZoomedSite] = useState<Site | null>(null);
+  const [stickerTransforms, setStickerTransforms] = useState<Record<string, StickerTransform>>(() => initStickerTransforms());
+  const [selectedStickerId, setSelectedStickerId] = useState<string | null>(null);
 
   const mapRef = useRef<HTMLDivElement>(null);
   const draggingRef = useRef<{ id: string; startX: number; startY: number } | null>(null);
@@ -59,6 +82,24 @@ export function EnergyMap() {
     setSelectedAsset(asset);
     setHoveredId(null);
   }, [editMode]);
+
+  const handleStickerUpdate = useCallback((id: string, updates: Partial<StickerTransform>) => {
+    setStickerTransforms((prev) => {
+      const next = { ...prev, [id]: { ...prev[id], ...updates } };
+      saveStickerTransforms(next);
+      return next;
+    });
+  }, []);
+
+  const handleStickerSelect = useCallback((id: string) => {
+    setSelectedStickerId(id);
+    setHoveredId(null);
+    setSelectedAsset(null);
+  }, []);
+
+  const handleDeselectSticker = useCallback(() => {
+    setSelectedStickerId(null);
+  }, []);
 
   const handleSiteClick = useCallback((site: Site) => {
     if (editMode) return;
@@ -241,6 +282,7 @@ export function EnergyMap() {
           ref={mapRef}
           className={`relative w-full rounded-xl overflow-hidden shadow-xl border border-gray-200 bg-white ${editMode ? 'cursor-crosshair' : ''}`}
           style={{ maxWidth: 1600 }}
+          onClick={handleDeselectSticker}
         >
           {/* Zoomable inner layer */}
           <div
@@ -260,9 +302,23 @@ export function EnergyMap() {
             />
 
             {/* Image stickers — z-index 5, always below markers (z-index 20) */}
-            {!editMode && stickers.map((sticker) => (
-              <StickerOverlay key={sticker.id} sticker={sticker} />
-            ))}
+            {!editMode && configStickers.map((sticker) => {
+              const transform = stickerTransforms[sticker.id];
+              if (!transform) return null;
+              return (
+                <StickerOverlay
+                  key={sticker.id}
+                  id={sticker.id}
+                  label={sticker.label}
+                  src={sticker.src}
+                  transform={transform}
+                  mapRef={mapRef}
+                  selected={selectedStickerId === sticker.id}
+                  onSelect={() => handleStickerSelect(sticker.id)}
+                  onUpdate={(updates) => handleStickerUpdate(sticker.id, updates)}
+                />
+              );
+            })}
 
             {/* Site labels — hidden in edit mode */}
             {!editMode && sites.map((site) => (
