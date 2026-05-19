@@ -1,10 +1,13 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { ArrowLeft, Move, Lock, Unlock, Copy, Check, Plus, MapPin, Zap } from 'lucide-react';
+import { ArrowLeft, Move, Lock, Unlock, Copy, Check, Plus, MapPin, Zap, Tag } from 'lucide-react';
 import { EnergyAsset, AssetType } from '@/data/assets';
+import { Site } from '@/data/sites';
 import { getSubMap } from '@/data/submaps';
 import { MarkerTooltip } from './MarkerTooltip';
 import { SidePanel } from './SidePanel';
 import { AddMpanDialog } from './AddMpanDialog';
+import { FreeLabel } from './FreeLabel';
+import { AddLabelDialog } from './AddLabelDialog';
 
 interface SubMapViewProps {
   subMapId: string;
@@ -30,6 +33,17 @@ function saveAssets(subMapId: string, assets: EnergyAsset[]) {
   localStorage.setItem(storageKey(subMapId, 'assets'), JSON.stringify(assets));
 }
 
+function loadLabels(subMapId: string): Site[] {
+  try {
+    const raw = localStorage.getItem(storageKey(subMapId, 'labels'));
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveLabels(subMapId: string, labels: Site[]) {
+  localStorage.setItem(storageKey(subMapId, 'labels'), JSON.stringify(labels));
+}
+
 export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: SubMapViewProps) {
   const subMap = getSubMap(subMapId);
   const [assets, setAssets] = useState<EnergyAsset[]>(() => loadAssets(subMapId));
@@ -41,6 +55,10 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
   const [addMpanMode, setAddMpanMode] = useState(false);
   const [pendingMpan, setPendingMpan] = useState<{ x: number; y: number } | null>(null);
   const [isExiting, setIsExiting] = useState(false);
+  const [userLabels, setUserLabels] = useState<Site[]>(() => loadLabels(subMapId));
+  const [addLabelMode, setAddLabelMode] = useState(false);
+  const [labelEditMode, setLabelEditMode] = useState(false);
+  const [pendingLabel, setPendingLabel] = useState<{ x: number; y: number } | null>(null);
 
   const handleBack = useCallback(() => {
     setIsExiting(true);
@@ -101,6 +119,9 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
     setHoveredId(null);
     setAddMpanMode(false);
     setPendingMpan(null);
+    setAddLabelMode(false);
+    setLabelEditMode(false);
+    setPendingLabel(null);
   };
 
   const exportText = assets
@@ -134,6 +155,39 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
     setAddMpanMode(false);
   }, [pendingMpan, subMapId, persist]);
 
+  const handleAddLabelConfirm = useCallback((name: string) => {
+    if (!pendingLabel) return;
+    const newLabel: Site = {
+      id: `submap-${subMapId}-label-${Date.now()}`,
+      name,
+      x: pendingLabel.x,
+      y: pendingLabel.y,
+    };
+    setUserLabels((prev) => {
+      const next = [...prev, newLabel];
+      saveLabels(subMapId, next);
+      return next;
+    });
+    setPendingLabel(null);
+    setAddLabelMode(false);
+  }, [pendingLabel, subMapId]);
+
+  const handleLabelUpdate = useCallback((id: string, updates: Partial<Site>) => {
+    setUserLabels((prev) => {
+      const next = prev.map((l) => l.id === id ? { ...l, ...updates } : l);
+      saveLabels(subMapId, next);
+      return next;
+    });
+  }, [subMapId]);
+
+  const handleLabelDelete = useCallback((id: string) => {
+    setUserLabels((prev) => {
+      const next = prev.filter((l) => l.id !== id);
+      saveLabels(subMapId, next);
+      return next;
+    });
+  }, [subMapId]);
+
   const handleMapClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (addMpanMode && mapRef.current) {
       e.stopPropagation();
@@ -141,8 +195,16 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
       const x = ((e.clientX - rect.left) / rect.width) * 100;
       const y = ((e.clientY - rect.top) / rect.height) * 100;
       setPendingMpan({ x, y });
+      return;
     }
-  }, [addMpanMode]);
+    if (addLabelMode && mapRef.current) {
+      e.stopPropagation();
+      const rect = mapRef.current.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      setPendingLabel({ x, y });
+    }
+  }, [addMpanMode, addLabelMode]);
 
   if (!subMap) {
     return (
@@ -180,7 +242,7 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          {!editMode && !addMpanMode && (
+          {!editMode && !addMpanMode && !addLabelMode && !labelEditMode && (
             <button
               onClick={() => { setAddMpanMode(true); setEditMode(false); setLocked(false); setSelectedAsset(null); }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors"
@@ -189,6 +251,46 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
               Add MPAN
             </button>
           )}
+
+          {/* Add label button — always visible unless another mode is active */}
+          {!editMode && !addMpanMode && !addLabelMode && !labelEditMode && (
+            <button
+              onClick={() => { setAddLabelMode(true); setEditMode(false); setLocked(false); setSelectedAsset(null); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border border-indigo-300 text-indigo-600 hover:bg-indigo-50 transition-colors"
+            >
+              <Tag size={13} />
+              Add label
+            </button>
+          )}
+
+          {/* Edit labels button — only when labels exist */}
+          {!editMode && !addMpanMode && !addLabelMode && !labelEditMode && userLabels.length > 0 && (
+            <button
+              onClick={() => setLabelEditMode(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              Edit labels
+            </button>
+          )}
+
+          {addLabelMode && (
+            <button
+              onClick={() => { setAddLabelMode(false); setPendingLabel(null); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+          )}
+
+          {labelEditMode && (
+            <button
+              onClick={() => setLabelEditMode(false)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+            >
+              Done editing
+            </button>
+          )}
+
           {addMpanMode && (
             <button
               onClick={() => { setAddMpanMode(false); setPendingMpan(null); }}
@@ -197,7 +299,8 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
               Cancel
             </button>
           )}
-          {!editMode && !locked && !addMpanMode && (
+
+          {!editMode && !locked && !addMpanMode && !addLabelMode && !labelEditMode && (
             <button
               onClick={handleEnterEdit}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 transition-colors"
@@ -251,6 +354,34 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
         </div>
       )}
 
+      {/* Add label mode banner */}
+      {addLabelMode && (
+        <div className="bg-indigo-600 text-white px-6 py-2.5 flex items-center gap-3 text-xs font-medium">
+          <span className="w-2 h-2 rounded-full bg-white animate-pulse shrink-0" />
+          Click anywhere on the map to place a text label
+          <button
+            onClick={() => { setAddLabelMode(false); setPendingLabel(null); }}
+            className="ml-auto text-indigo-200 hover:text-white underline"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {/* Label edit mode banner */}
+      {labelEditMode && (
+        <div className="bg-indigo-50 border-b border-indigo-200 text-indigo-700 px-6 py-2 flex items-center gap-3 text-xs font-medium">
+          <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse shrink-0" />
+          Drag labels to reposition — click ✕ on a label to delete it
+          <button
+            onClick={() => setLabelEditMode(false)}
+            className="ml-auto text-indigo-500 hover:text-indigo-800 underline"
+          >
+            Done
+          </button>
+        </div>
+      )}
+
       {/* Locked export bar */}
       {locked && (
         <div className="bg-gray-900 text-gray-100 px-6 py-3 flex items-start gap-4 border-b border-gray-700">
@@ -276,7 +407,7 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
       <main className="flex-1 flex items-start justify-center p-6">
         <div
           ref={mapRef}
-          className={`relative w-full rounded-xl overflow-hidden shadow-xl border border-gray-200 bg-white ${editMode || addMpanMode ? 'cursor-crosshair' : ''}`}
+          className={`relative w-full rounded-xl overflow-hidden shadow-xl border border-gray-200 bg-white ${editMode || addMpanMode || addLabelMode ? 'cursor-crosshair' : ''}`}
           style={{ maxWidth: 1600 }}
           onClick={handleMapClick}
         >
@@ -286,6 +417,18 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
             className="w-full h-auto block"
             draggable={false}
           />
+
+          {/* Free text labels */}
+          {userLabels.map((label) => (
+            <FreeLabel
+              key={label.id}
+              site={label}
+              mapRef={mapRef}
+              editMode={labelEditMode}
+              onUpdate={handleLabelUpdate}
+              onDelete={handleLabelDelete}
+            />
+          ))}
 
           {/* MPAN markers */}
           {assets.map((asset) => {
@@ -357,6 +500,15 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
           y={pendingMpan.y}
           onConfirm={handleAddMpanConfirm}
           onCancel={() => setPendingMpan(null)}
+        />
+      )}
+
+      {pendingLabel && (
+        <AddLabelDialog
+          x={pendingLabel.x}
+          y={pendingLabel.y}
+          onConfirm={handleAddLabelConfirm}
+          onCancel={() => { setPendingLabel(null); setAddLabelMode(false); }}
         />
       )}
     </div>
