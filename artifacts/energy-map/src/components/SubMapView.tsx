@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { ArrowLeft, Move, Lock, Unlock, Copy, Check, Plus, MapPin } from 'lucide-react';
+import { ArrowLeft, Move, Lock, Unlock, Copy, Check, Plus, MapPin, Zap } from 'lucide-react';
 import { EnergyAsset, AssetType } from '@/data/assets';
 import { getSubMap } from '@/data/submaps';
 import { MarkerTooltip } from './MarkerTooltip';
@@ -320,6 +320,7 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
                         : '0 2px 8px rgba(220,38,38,0.5)',
                     }}
                   />
+                  <Zap size={8} fill="white" color="white" className="relative z-10" strokeWidth={0} />
                 </button>
 
                 {editMode && (

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Move, Lock, Unlock, Copy, Check, ZoomOut, Plus, Tag } from 'lucide-react';
+import { Move, Lock, Unlock, Copy, Check, ZoomOut, Plus, Tag, Zap } from 'lucide-react';
 import { assets as configAssets, EnergyAsset, AssetType } from '@/data/assets';
 import { sites as configSites, Site } from '@/data/sites';
 import { stickers as configStickers } from '@/data/stickers';
@@ -683,6 +683,7 @@ export function EnergyMap() {
                           : '0 2px 8px rgba(220,38,38,0.5)',
                       }}
                     />
+                    <Zap size={8} fill="white" color="white" className="relative z-10" strokeWidth={0} />
                   </button>
 
                   {editMode && (
