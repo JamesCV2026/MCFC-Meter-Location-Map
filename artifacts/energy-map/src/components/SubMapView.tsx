@@ -8,6 +8,8 @@ import { AddMpanDialog } from './AddMpanDialog';
 
 interface SubMapViewProps {
   subMapId: string;
+  originX?: number;
+  originY?: number;
   onBack: () => void;
 }
 
@@ -28,7 +30,7 @@ function saveAssets(subMapId: string, assets: EnergyAsset[]) {
   localStorage.setItem(storageKey(subMapId, 'assets'), JSON.stringify(assets));
 }
 
-export function SubMapView({ subMapId, onBack }: SubMapViewProps) {
+export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: SubMapViewProps) {
   const subMap = getSubMap(subMapId);
   const [assets, setAssets] = useState<EnergyAsset[]>(() => loadAssets(subMapId));
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -146,7 +148,10 @@ export function SubMapView({ subMapId, onBack }: SubMapViewProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col">
+    <div
+      className="min-h-screen bg-slate-100 flex flex-col submap-enter"
+      style={{ transformOrigin: `${originX}% ${originY}%` }}
+    >
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-4 shrink-0 shadow-sm">
         <button

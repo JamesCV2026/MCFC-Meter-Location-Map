@@ -11,6 +11,7 @@ import { SiteLabel } from './SiteLabel';
 import { StickerOverlay, StickerTransform } from './StickerOverlay';
 import { AddMpanDialog } from './AddMpanDialog';
 import { SubMapView } from './SubMapView';
+import { submaps } from '@/data/submaps';
 import mapImage from '@assets/Overview_1779198593346.png';
 
 const ALL_TYPES: AssetType[] = ['mpan', 'generation'];
@@ -112,11 +113,19 @@ export function EnergyMap() {
   const [copied, setCopied] = useState(false);
   const [zoomedSite, setZoomedSite] = useState<Site | null>(null);
   const [activeSubMapId, setActiveSubMapId] = useState<string | null>(null);
+  const [subMapOrigin, setSubMapOrigin] = useState({ x: 50, y: 50 });
   const [stickerTransforms, setStickerTransforms] = useState<Record<string, StickerTransform>>(() => initStickerTransforms());
   const [selectedStickerId, setSelectedStickerId] = useState<string | null>(null);
   const [deletedStickerIds, setDeletedStickerIds] = useState<Set<string>>(() => loadDeletedStickers());
 
   const mapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    submaps.forEach((sm) => {
+      const img = new Image();
+      img.src = sm.image;
+    });
+  }, []);
   const draggingRef = useRef<{ id: string; startX: number; startY: number } | null>(null);
 
   const handleFilterChange = useCallback((type: AssetType, checked: boolean) => {
@@ -217,6 +226,7 @@ export function EnergyMap() {
   const handleSiteClick = useCallback((site: Site) => {
     if (editMode || labelEditMode) return;
     if (site.subMapId) {
+      setSubMapOrigin({ x: site.x, y: site.y });
       setActiveSubMapId(site.subMapId);
       return;
     }
@@ -314,7 +324,14 @@ export function EnergyMap() {
   };
 
   if (activeSubMapId) {
-    return <SubMapView subMapId={activeSubMapId} onBack={() => setActiveSubMapId(null)} />;
+    return (
+      <SubMapView
+        subMapId={activeSubMapId}
+        originX={subMapOrigin.x}
+        originY={subMapOrigin.y}
+        onBack={() => setActiveSubMapId(null)}
+      />
+    );
   }
 
   const visibleAssets = assets.filter((a) => visibleTypes.has(a.type));
