@@ -1,10 +1,12 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Move, Lock, Unlock, Copy, Check } from 'lucide-react';
+import { Move, Lock, Unlock, Copy, Check, ZoomOut } from 'lucide-react';
 import { assets as configAssets, EnergyAsset, AssetType } from '@/data/assets';
+import { sites, Site } from '@/data/sites';
 import { MarkerTooltip } from './MarkerTooltip';
 import { SidePanel } from './SidePanel';
 import { Legend } from './Legend';
 import { FilterPanel } from './FilterPanel';
+import { SiteLabel } from './SiteLabel';
 import mapImage from '@assets/Overview_1779198593346.png';
 
 const ALL_TYPES: AssetType[] = ['mpan', 'generation'];
@@ -36,6 +38,7 @@ export function EnergyMap() {
   const [editMode, setEditMode] = useState(false);
   const [locked, setLocked] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [zoomedSite, setZoomedSite] = useState<Site | null>(null);
 
   const mapRef = useRef<HTMLDivElement>(null);
   const draggingRef = useRef<{ id: string; startX: number; startY: number } | null>(null);
@@ -55,6 +58,17 @@ export function EnergyMap() {
     setHoveredId(null);
   }, [editMode]);
 
+  const handleSiteClick = useCallback((site: Site) => {
+    if (editMode) return;
+    setZoomedSite((prev) => prev?.id === site.id ? null : site);
+    setHoveredId(null);
+    setSelectedAsset(null);
+  }, [editMode]);
+
+  const handleZoomOut = useCallback(() => {
+    setZoomedSite(null);
+  }, []);
+
   const handleMarkerMouseDown = useCallback((e: React.MouseEvent, id: string) => {
     if (!editMode) return;
     e.preventDefault();
@@ -64,7 +78,6 @@ export function EnergyMap() {
 
   useEffect(() => {
     if (!editMode) return;
-
     const onMouseMove = (e: MouseEvent) => {
       if (!draggingRef.current || !mapRef.current) return;
       const rect = mapRef.current.getBoundingClientRect();
@@ -73,12 +86,7 @@ export function EnergyMap() {
       const id = draggingRef.current.id;
       setAssets((prev) => prev.map((a) => a.id === id ? { ...a, x, y } : a));
     };
-
-    const onMouseUp = () => {
-      if (!draggingRef.current) return;
-      draggingRef.current = null;
-    };
-
+    const onMouseUp = () => { draggingRef.current = null; };
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
     return () => {
@@ -100,6 +108,7 @@ export function EnergyMap() {
     setLocked(false);
     setSelectedAsset(null);
     setHoveredId(null);
+    setZoomedSite(null);
   };
 
   const exportText = assets
@@ -114,6 +123,10 @@ export function EnergyMap() {
   };
 
   const visibleAssets = assets.filter((a) => visibleTypes.has(a.type));
+
+  const zoomScale = zoomedSite?.zoom ?? 1;
+  const zoomOriginX = zoomedSite?.x ?? 50;
+  const zoomOriginY = zoomedSite?.y ?? 50;
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
@@ -137,9 +150,25 @@ export function EnergyMap() {
           <span>
             <span className="font-semibold text-gray-800">{visibleAssets.length}</span> visible
           </span>
+          {zoomedSite && (
+            <span className="text-blue-600 font-semibold flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
+              {zoomedSite.name}
+            </span>
+          )}
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          {zoomedSite && !editMode && (
+            <button
+              data-testid="btn-zoom-out"
+              onClick={handleZoomOut}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+            >
+              <ZoomOut size={13} />
+              Zoom out
+            </button>
+          )}
           {!editMode && !locked && (
             <button
               data-testid="btn-edit-positions"
@@ -211,73 +240,107 @@ export function EnergyMap() {
           className={`relative w-full rounded-xl overflow-hidden shadow-xl border border-gray-200 bg-white ${editMode ? 'cursor-crosshair' : ''}`}
           style={{ maxWidth: 1600 }}
         >
-          <img
-            src={mapImage}
-            alt="Etihad Campus map"
-            data-testid="map-image"
-            className="w-full h-auto block"
-            draggable={false}
-          />
+          {/* Zoomable inner layer */}
+          <div
+            data-testid="map-zoom-layer"
+            style={{
+              transformOrigin: `${zoomOriginX}% ${zoomOriginY}%`,
+              transform: `scale(${zoomScale})`,
+              transition: 'transform 0.45s cubic-bezier(0.4, 0, 0.2, 1)',
+            }}
+          >
+            <img
+              src={mapImage}
+              alt="Etihad Campus map"
+              data-testid="map-image"
+              className="w-full h-auto block"
+              draggable={false}
+            />
 
+            {/* Site labels — hidden in edit mode */}
+            {!editMode && sites.map((site) => (
+              <SiteLabel
+                key={site.id}
+                site={site}
+                onClick={handleSiteClick}
+                active={zoomedSite?.id === site.id}
+              />
+            ))}
+
+            {/* Asset markers */}
+            {visibleAssets.map((asset) => {
+              const isHovered = hoveredId === asset.id;
+              const isDragging = draggingRef.current?.id === asset.id;
+              return (
+                <div
+                  key={asset.id}
+                  data-testid={`marker-${asset.id}`}
+                  className="absolute"
+                  style={{
+                    left: `${asset.x}%`,
+                    top: `${asset.y}%`,
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: isHovered || isDragging ? 25 : 20,
+                    cursor: editMode ? 'grab' : 'pointer',
+                    userSelect: 'none',
+                  }}
+                  onMouseEnter={() => { if (!editMode) setHoveredId(asset.id); }}
+                  onMouseLeave={() => setHoveredId(null)}
+                  onMouseDown={(e) => handleMarkerMouseDown(e, asset.id)}
+                  onClick={() => { if (!editMode) handleOpen(asset); }}
+                >
+                  <button
+                    className="relative flex items-center justify-center focus:outline-none"
+                    style={{ width: 18, height: 18 }}
+                    aria-label={`${editMode ? 'Drag' : 'Open'} ${asset.name}`}
+                    tabIndex={editMode ? -1 : 0}
+                  >
+                    <span
+                      className={`absolute rounded-full ${editMode ? '' : 'marker-pulse'}`}
+                      style={{
+                        width: 18,
+                        height: 18,
+                        background: '#dc2626',
+                        border: `2px solid ${editMode ? '#fbbf24' : 'white'}`,
+                        boxShadow: editMode
+                          ? '0 0 0 3px rgba(251,191,36,0.4), 0 2px 8px rgba(220,38,38,0.5)'
+                          : '0 2px 8px rgba(220,38,38,0.5)',
+                      }}
+                    />
+                  </button>
+
+                  {editMode && (
+                    <div
+                      className="absolute left-5 top-1/2 -translate-y-1/2 bg-gray-900/90 text-white text-[9px] font-mono rounded px-1.5 py-0.5 whitespace-nowrap pointer-events-none"
+                      style={{ zIndex: 30 }}
+                    >
+                      {asset.x.toFixed(1)}, {asset.y.toFixed(1)}
+                    </div>
+                  )}
+
+                  {!editMode && isHovered && (
+                    <MarkerTooltip asset={asset} onViewData={() => handleOpen(asset)} flipDown={asset.y < 25} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Controls sit outside the zoom layer so they don't scale */}
           {!editMode && <Legend />}
           {!editMode && <FilterPanel visible={visibleTypes} onChange={handleFilterChange} />}
 
-          {visibleAssets.map((asset) => {
-            const isHovered = hoveredId === asset.id;
-            const isDragging = draggingRef.current?.id === asset.id;
-            return (
-              <div
-                key={asset.id}
-                data-testid={`marker-${asset.id}`}
-                className="absolute"
-                style={{
-                  left: `${asset.x}%`,
-                  top: `${asset.y}%`,
-                  transform: 'translate(-50%, -50%)',
-                  zIndex: isHovered || isDragging ? 25 : 20,
-                  cursor: editMode ? 'grab' : 'pointer',
-                  userSelect: 'none',
-                }}
-                onMouseEnter={() => { if (!editMode) setHoveredId(asset.id); }}
-                onMouseLeave={() => setHoveredId(null)}
-                onMouseDown={(e) => handleMarkerMouseDown(e, asset.id)}
-                onClick={() => { if (!editMode) handleOpen(asset); }}
-              >
-                <button
-                  className="relative flex items-center justify-center focus:outline-none"
-                  style={{ width: 18, height: 18 }}
-                  aria-label={`${editMode ? 'Drag' : 'Open'} ${asset.name}`}
-                  tabIndex={editMode ? -1 : 0}
-                >
-                  <span
-                    className={`absolute rounded-full ${editMode ? '' : 'marker-pulse'}`}
-                    style={{
-                      width: 18,
-                      height: 18,
-                      background: editMode ? '#dc2626' : '#dc2626',
-                      border: `2px solid ${editMode ? '#fbbf24' : 'white'}`,
-                      boxShadow: editMode
-                        ? '0 0 0 3px rgba(251,191,36,0.4), 0 2px 8px rgba(220,38,38,0.5)'
-                        : '0 2px 8px rgba(220,38,38,0.5)',
-                    }}
-                  />
-                </button>
-
-                {editMode && (
-                  <div
-                    className="absolute left-5 top-1/2 -translate-y-1/2 bg-gray-900/90 text-white text-[9px] font-mono rounded px-1.5 py-0.5 whitespace-nowrap pointer-events-none"
-                    style={{ zIndex: 30 }}
-                  >
-                    {asset.x.toFixed(1)}, {asset.y.toFixed(1)}
-                  </div>
-                )}
-
-                {!editMode && isHovered && (
-                  <MarkerTooltip asset={asset} onViewData={() => handleOpen(asset)} flipDown={asset.y < 25} />
-                )}
-              </div>
-            );
-          })}
+          {/* Zoom-out overlay hint when zoomed */}
+          {zoomedSite && !editMode && (
+            <button
+              onClick={handleZoomOut}
+              data-testid="btn-zoom-out-overlay"
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-gray-900/80 backdrop-blur-sm text-white text-xs font-semibold rounded-full shadow-lg hover:bg-gray-900 transition-colors z-30"
+            >
+              <ZoomOut size={12} />
+              Click to zoom out
+            </button>
+          )}
         </div>
       </main>
 
