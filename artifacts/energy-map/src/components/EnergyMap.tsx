@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Move, Lock, Unlock, Copy, Check, ZoomOut, Plus } from 'lucide-react';
+import { Move, Lock, Unlock, Copy, Check, ZoomOut, Plus, Tag } from 'lucide-react';
 import { assets as configAssets, EnergyAsset, AssetType } from '@/data/assets';
-import { sites, Site } from '@/data/sites';
+import { sites as configSites, Site } from '@/data/sites';
 import { stickers as configStickers } from '@/data/stickers';
 import { MarkerTooltip } from './MarkerTooltip';
 import { SidePanel } from './SidePanel';
@@ -48,6 +48,24 @@ function initStickerTransforms(): Record<string, StickerTransform> {
   return result;
 }
 
+const SITE_OVERRIDES_KEY = 'energy-map-site-overrides';
+
+function loadSiteOverrides(): Record<string, Partial<Site>> {
+  try {
+    const raw = localStorage.getItem(SITE_OVERRIDES_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function saveSiteOverrides(overrides: Record<string, Partial<Site>>) {
+  localStorage.setItem(SITE_OVERRIDES_KEY, JSON.stringify(overrides));
+}
+
+function initSites(): Site[] {
+  const overrides = loadSiteOverrides();
+  return configSites.map((s) => ({ ...s, ...overrides[s.id] }));
+}
+
 function loadPositions(): Record<string, { x: number; y: number }> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -68,6 +86,8 @@ function mergePositions(base: EnergyAsset[]): EnergyAsset[] {
 
 export function EnergyMap() {
   const [assets, setAssets] = useState<EnergyAsset[]>(() => [...mergePositions(configAssets), ...loadUserAssets()]);
+  const [siteState, setSiteState] = useState<Site[]>(() => initSites());
+  const [labelEditMode, setLabelEditMode] = useState(false);
   const [addMpanMode, setAddMpanMode] = useState(false);
   const [pendingMpan, setPendingMpan] = useState<{ x: number; y: number } | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -114,6 +134,24 @@ export function EnergyMap() {
 
   const handleDeselectSticker = useCallback(() => {
     setSelectedStickerId(null);
+  }, []);
+
+  const handleSiteLabelUpdate = useCallback((id: string, updates: Partial<Site>) => {
+    setSiteState((prev) => {
+      const next = prev.map((s) => s.id === id ? { ...s, ...updates } : s);
+      // persist overrides as a map
+      const overrides: Record<string, Partial<Site>> = {};
+      next.forEach((s, i) => {
+        const orig = configSites[i];
+        const diff: Partial<Site> = {};
+        if (s.name !== orig.name) diff.name = s.name;
+        if (Math.abs(s.x - orig.x) > 0.01) diff.x = s.x;
+        if (Math.abs(s.y - orig.y) > 0.01) diff.y = s.y;
+        if (Object.keys(diff).length) overrides[s.id] = diff;
+      });
+      saveSiteOverrides(overrides);
+      return next;
+    });
   }, []);
 
   const handleAddMpanConfirm = useCallback((name: string, mpan: string, notes: string) => {
@@ -203,12 +241,26 @@ export function EnergyMap() {
     setZoomedSite(null);
     setAddMpanMode(false);
     setPendingMpan(null);
+    setLabelEditMode(false);
   };
 
   const handleEnterAddMpan = () => {
     setAddMpanMode(true);
     setEditMode(false);
     setLocked(false);
+    setSelectedAsset(null);
+    setHoveredId(null);
+    setZoomedSite(null);
+    setSelectedStickerId(null);
+    setLabelEditMode(false);
+  };
+
+  const handleEnterLabelEdit = () => {
+    setLabelEditMode(true);
+    setEditMode(false);
+    setLocked(false);
+    setAddMpanMode(false);
+    setPendingMpan(null);
     setSelectedAsset(null);
     setHoveredId(null);
     setZoomedSite(null);
@@ -268,7 +320,7 @@ export function EnergyMap() {
         </div>
 
         <div className="ml-auto flex items-center gap-2">
-          {!editMode && !addMpanMode && (
+          {!editMode && !addMpanMode && !labelEditMode && (
             <button
               data-testid="btn-add-mpan"
               onClick={handleEnterAddMpan}
@@ -276,6 +328,25 @@ export function EnergyMap() {
             >
               <Plus size={13} />
               Add MPAN
+            </button>
+          )}
+          {!editMode && !addMpanMode && !labelEditMode && (
+            <button
+              data-testid="btn-edit-labels"
+              onClick={handleEnterLabelEdit}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+            >
+              <Tag size={13} />
+              Edit labels
+            </button>
+          )}
+          {labelEditMode && (
+            <button
+              onClick={() => setLabelEditMode(false)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+            >
+              <Check size={13} />
+              Done editing labels
             </button>
           )}
           {addMpanMode && (
@@ -417,13 +488,16 @@ export function EnergyMap() {
               );
             })}
 
-            {/* Site labels — hidden in edit mode */}
-            {!editMode && sites.map((site) => (
+            {/* Site labels — hidden in marker-edit mode */}
+            {!editMode && siteState.map((site) => (
               <SiteLabel
                 key={site.id}
                 site={site}
+                mapRef={mapRef}
                 onClick={handleSiteClick}
+                onUpdate={handleSiteLabelUpdate}
                 active={zoomedSite?.id === site.id}
+                labelEditMode={labelEditMode}
               />
             ))}
 
