@@ -121,7 +121,7 @@
 @keyframes submap-zoom-in {
   from {
     opacity: 0;
-    transform: scale(0.9);
+    transform: scale(0.12);
   }
   to {
     opacity: 1;
@@ -129,6 +129,21 @@
   }
 }
 
+@keyframes submap-zoom-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.12);
+  }
+}
+
 .submap-enter {
-  animation: submap-zoom-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: submap-zoom-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.submap-exit {
+  animation: submap-zoom-out 0.35s cubic-bezier(0.4, 0, 0.8, 0) forwards;
 }

@@ -40,6 +40,11 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
   const [copied, setCopied] = useState(false);
   const [addMpanMode, setAddMpanMode] = useState(false);
   const [pendingMpan, setPendingMpan] = useState<{ x: number; y: number } | null>(null);
+  const [isExiting, setIsExiting] = useState(false);
+
+  const handleBack = useCallback(() => {
+    setIsExiting(true);
+  }, []);
 
   const mapRef = useRef<HTMLDivElement>(null);
   const draggingRef = useRef<{ id: string; startX: number; startY: number } | null>(null);
@@ -149,13 +154,14 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
 
   return (
     <div
-      className="min-h-screen bg-slate-100 flex flex-col submap-enter"
+      className={`min-h-screen bg-slate-100 flex flex-col ${isExiting ? 'submap-exit' : 'submap-enter'}`}
       style={{ transformOrigin: `${originX}% ${originY}%` }}
+      onAnimationEnd={isExiting ? onBack : undefined}
     >
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-4 shrink-0 shadow-sm">
         <button
-          onClick={onBack}
+          onClick={handleBack}
           className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors"
         >
           <ArrowLeft size={15} />
