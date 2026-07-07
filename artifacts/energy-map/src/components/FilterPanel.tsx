@@ -1,26 +1,26 @@
-import { Zap } from 'lucide-react';
 import { AssetType } from '@/data/assets';
+import { assetTypeConfig, ALL_ASSET_TYPES } from '@/data/assetTypes';
 
 interface FilterPanelProps {
   visible: Set<AssetType>;
   onChange: (type: AssetType, checked: boolean) => void;
+  // When true, drop the absolute positioning so a parent can place/stack it.
+  embedded?: boolean;
 }
 
-const filterItems: { type: AssetType; label: string; Icon: React.ComponentType<{ size?: number; className?: string }> }[] = [
-  { type: 'mpan', label: 'MPAN', Icon: Zap },
-];
-
-export function FilterPanel({ visible, onChange }: FilterPanelProps) {
+export function FilterPanel({ visible, onChange, embedded = false }: FilterPanelProps) {
   return (
     <div
       data-testid="filter-panel"
-      className="absolute top-3 right-3 z-20 bg-white/95 backdrop-blur-sm rounded-lg border border-gray-200 shadow-lg p-3 min-w-[170px]"
+      className={`${embedded ? '' : 'hidden xs:block absolute top-3 right-3 z-20 '}bg-white/95 backdrop-blur-sm rounded-lg border border-gray-200 shadow-lg p-2 sm:p-3 min-w-[140px] sm:min-w-[170px] text-[10px] sm:text-xs`}
     >
       <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2 leading-none">
-        Filter Assets
+        Filter Infrastructure
       </p>
       <ul className="space-y-1.5">
-        {filterItems.map(({ type, label, Icon }) => {
+        {/* 'building' is no longer shown as a filter — buildings live as stickers */}
+        {ALL_ASSET_TYPES.filter((type) => type !== 'building').map((type) => {
+          const { label, color, Icon } = assetTypeConfig[type];
           const checked = visible.has(type);
           return (
             <li key={type}>
@@ -32,9 +32,14 @@ export function FilterPanel({ visible, onChange }: FilterPanelProps) {
                   type="checkbox"
                   checked={checked}
                   onChange={(e) => onChange(type, e.target.checked)}
-                  className="w-3.5 h-3.5 rounded border-gray-300 accent-red-600 cursor-pointer"
+                  className="w-3.5 h-3.5 rounded border-gray-300 cursor-pointer"
+                  style={{ accentColor: color }}
                 />
-                <Icon size={12} className={`shrink-0 ${checked ? 'text-gray-700' : 'text-gray-400'}`} />
+                <Icon
+                  size={12}
+                  className="shrink-0"
+                  style={{ color: checked ? color : '#9ca3af' }}
+                />
                 <span className={`text-xs font-medium transition-colors ${checked ? 'text-gray-700' : 'text-gray-400'}`}>
                   {label}
                 </span>

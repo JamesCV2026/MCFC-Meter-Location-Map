@@ -1,15 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
-import { Tag } from 'lucide-react';
+import { Tag, MapPin } from 'lucide-react';
+
+type LabelStyle = 'pin' | 'tag';
 
 interface AddLabelDialogProps {
   x: number;
   y: number;
-  onConfirm: (name: string) => void;
+  onConfirm: (name: string, style: LabelStyle) => void;
   onCancel: () => void;
 }
 
 export function AddLabelDialog({ x, y, onConfirm, onCancel }: AddLabelDialogProps) {
   const [name, setName] = useState('');
+  const [style, setStyle] = useState<LabelStyle>('pin');
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -19,7 +22,7 @@ export function AddLabelDialog({ x, y, onConfirm, onCancel }: AddLabelDialogProp
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    onConfirm(name.trim());
+    onConfirm(name.trim(), style);
   };
 
   return (
@@ -49,6 +52,46 @@ export function AddLabelDialog({ x, y, onConfirm, onCancel }: AddLabelDialogProp
               placeholder="e.g. Substation A"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+              Style
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {/* Pin (the original) — full pill with map-pin + zoom chevron */}
+              <button
+                type="button"
+                onClick={() => setStyle('pin')}
+                className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg border text-[11px] font-semibold transition-colors ${
+                  style === 'pin'
+                    ? 'border-indigo-400 bg-indigo-50 text-indigo-700'
+                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                }`}
+              >
+                <MapPin size={14} />
+                <span>Pin</span>
+                <span className="text-[9px] font-normal text-gray-500 leading-none">
+                  Full pill with icons
+                </span>
+              </button>
+              {/* Tag (new) — small text-only pill */}
+              <button
+                type="button"
+                onClick={() => setStyle('tag')}
+                className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg border text-[11px] font-semibold transition-colors ${
+                  style === 'tag'
+                    ? 'border-indigo-400 bg-indigo-50 text-indigo-700'
+                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                }`}
+              >
+                <Tag size={14} />
+                <span>Tag</span>
+                <span className="text-[9px] font-normal text-gray-500 leading-none">
+                  Compact text only
+                </span>
+              </button>
+            </div>
           </div>
           <div className="flex gap-2">
             <button

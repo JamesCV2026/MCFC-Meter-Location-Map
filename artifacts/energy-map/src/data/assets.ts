@@ -1,4 +1,14 @@
-export type AssetType = 'mpan' | 'transformer' | 'substation' | 'generation';
+export type AssetType =
+  | 'mpan'
+  | 'substation'
+  | 'transformer'
+  | 'wind-turbine'
+  | 'chp'
+  | 'board'
+  | 'diesel-generator'
+  | 'battery'
+  | 'solar-panel'
+  | 'building';
 
 export interface EnergyAsset {
   id: string;
@@ -12,85 +22,56 @@ export interface EnergyAsset {
   notes?: string;
 }
 
+// Positions (x, y) are percentages of the map canvas and are the permanent,
+// source-of-truth layout. Edit these values to move a marker for good — the
+// in-app "Edit positions" mode only saves to the browser (localStorage).
 export const assets: EnergyAsset[] = [
-  {
-    id: 'mpan-01',
-    name: 'MPAN 01 — North Campus (West)',
-    type: 'mpan',
-    x: 34.5,
-    y: 13,
-    mpan: '1013000000001',
-  },
   {
     id: 'mpan-02',
     name: 'MPAN 02 — North Campus (East)',
     type: 'mpan',
-    x: 43,
-    y: 14,
+    x: 43.18,
+    y: 15.05,
     mpan: '1013000000002',
-  },
-  {
-    id: 'mpan-03',
-    name: 'MPAN 03 — A6010 Junction',
-    type: 'mpan',
-    x: 47,
-    y: 24,
-    mpan: '1013000000003',
-  },
-  {
-    id: 'mpan-05',
-    name: 'MPAN 05 — Stadium West',
-    type: 'mpan',
-    x: 33.5,
-    y: 36.5,
-    mpan: '1013000000005',
   },
   {
     id: 'mpan-06',
     name: 'MPAN 06 — Stadium North',
     type: 'mpan',
-    x: 36,
-    y: 35.5,
+    x: 38.01,
+    y: 32.96,
     mpan: '1013000000006',
   },
   {
     id: 'mpan-07',
     name: 'MPAN 07 — Stadium North-East',
     type: 'mpan',
-    x: 38.5,
-    y: 36.5,
+    x: 39.55,
+    y: 32.67,
     mpan: '1013000000007',
   },
   {
     id: 'mpan-08',
     name: 'MPAN 08 — Rowsley Street',
     type: 'mpan',
-    x: 34.5,
-    y: 43,
+    x: 36.00,
+    y: 44.57,
     mpan: '1013000000008',
-  },
-  {
-    id: 'mpan-09',
-    name: 'MPAN 09 — Stadium East / A6010',
-    type: 'mpan',
-    x: 47,
-    y: 41,
-    mpan: '1013000000009',
   },
   {
     id: 'mpan-10',
     name: 'MPAN 10 — Clayton Lane',
     type: 'mpan',
-    x: 63,
-    y: 41,
+    x: 67.07,
+    y: 51.45,
     mpan: '1013000000010',
   },
   {
     id: 'mpan-11',
     name: 'MPAN 11 — Wilson Street / South',
     type: 'mpan',
-    x: 57,
-    y: 74,
+    x: 71.19,
+    y: 87.85,
     mpan: '1013000000011',
   },
 ];

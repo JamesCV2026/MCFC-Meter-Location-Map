@@ -97,7 +97,7 @@ export function TableModal({ onClose }: TableModalProps) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
           <div>
             <h2 className="text-base font-bold text-gray-900">Generation &amp; Consumption Table</h2>
-            <p className="text-[11px] text-gray-500 mt-0.5">MCFC Campus — Annual energy summary</p>
+            <p className="text-[11px] text-gray-500 mt-0.5">MCFC Campus Feasibility Study: annual energy summary</p>
           </div>
           <button
             onClick={onClose}

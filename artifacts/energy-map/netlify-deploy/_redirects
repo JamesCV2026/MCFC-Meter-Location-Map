@@ -1,0 +1,2 @@
+# Netlify SPA redirects — everything routes to index.html (the standalone HTML)
+/*  /index.html  200

@@ -9,9 +9,11 @@ interface SiteLabelProps {
   onUpdate: (id: string, updates: Partial<{ name: string; x: number; y: number }>) => void;
   active?: boolean;
   labelEditMode?: boolean;
+  zoom?: number;
+  disabled?: boolean;
 }
 
-export function SiteLabel({ site, mapRef, onClick, onUpdate, active = false, labelEditMode = false }: SiteLabelProps) {
+export function SiteLabel({ site, mapRef, onClick, onUpdate, active = false, labelEditMode = false, zoom = 1, disabled = false }: SiteLabelProps) {
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState(site.name);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -47,8 +49,8 @@ export function SiteLabel({ site, mapRef, onClick, onUpdate, active = false, lab
       if (!state.moved && Math.sqrt(dx * dx + dy * dy) < 4) return;
       state.moved = true;
       const rect = mapRef.current.getBoundingClientRect();
-      const x = Math.max(0, Math.min(100, state.startX + (dx / rect.width) * 100));
-      const y = Math.max(0, Math.min(100, state.startY + (dy / rect.height) * 100));
+      const x = Math.max(0, Math.min(100, state.startX + (dx / zoom / rect.width) * 100));
+      const y = Math.max(0, Math.min(100, state.startY + (dy / zoom / rect.height) * 100));
       onUpdate(site.id, { x, y });
     }
 
@@ -62,7 +64,7 @@ export function SiteLabel({ site, mapRef, onClick, onUpdate, active = false, lab
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
     };
-  }, [labelEditMode, site.id, site.x, site.y, mapRef, onUpdate]);
+  }, [labelEditMode, site.id, site.x, site.y, mapRef, onUpdate, zoom]);
 
   function commitName() {
     const trimmed = draftName.trim();
@@ -86,6 +88,7 @@ export function SiteLabel({ site, mapRef, onClick, onUpdate, active = false, lab
         transform: 'translate(-50%, -50%)',
         zIndex: 15,
         userSelect: 'none',
+        pointerEvents: disabled ? 'none' : undefined,
       }}
     >
       {labelEditMode ? (
@@ -126,8 +129,24 @@ export function SiteLabel({ site, mapRef, onClick, onUpdate, active = false, lab
             {editing ? <Check size={11} /> : <Pencil size={11} />}
           </button>
         </div>
+      ) : site.style === 'tag' ? (
+        /* ── Tag style — compact text-only pill, no icons, no zoom action.
+              Used for naming buildings or features that don't navigate.
+              Clicking still fires onClick (parent decides what to do — if
+              the site has no subMapId nothing happens, which is the point). */
+        <button
+          data-style="tag"
+          onClick={() => onClick(site)}
+          className={`backdrop-blur-sm border rounded-full px-2 py-0.5 shadow-sm transition-all duration-150 whitespace-nowrap text-[10px] font-semibold leading-tight ${
+            active
+              ? 'bg-blue-600 border-blue-700 text-white shadow-md shadow-blue-200'
+              : 'bg-white/90 border-gray-200 text-gray-800 hover:bg-white hover:border-blue-300 cursor-default'
+          }`}
+        >
+          {site.name}
+        </button>
       ) : (
-        /* ── Normal mode pill ── */
+        /* ── Pin style (default) — full pill with map-pin icon + zoom chevron */
         <button
           onClick={() => onClick(site)}
           className={`group flex items-center gap-1.5 backdrop-blur-sm border rounded-lg px-2.5 py-1.5 shadow-md transition-all duration-150 cursor-pointer whitespace-nowrap ${

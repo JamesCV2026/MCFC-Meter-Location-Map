@@ -4,6 +4,13 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Extra-small breakpoint at 480 px so the Legend and Filter panels can hide
+   on phones (where they otherwise cover most of the map) and reappear from
+   the toggle buttons above the bottom-right zoom controls. */
+@theme {
+  --breakpoint-xs: 30rem;
+}
+
 @theme inline {
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
@@ -102,20 +109,52 @@
   }
 }
 
+/* Pulse uses the marker's own colour via currentColor, so every asset type
+   pulses in its own colour. Set `color` on the pulsing element to tint it. */
 @keyframes marker-pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.55), 0 2px 8px rgba(220, 38, 38, 0.5);
+    box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 55%, transparent),
+                0 2px 8px color-mix(in srgb, currentColor 50%, transparent);
   }
   70% {
-    box-shadow: 0 0 0 8px rgba(220, 38, 38, 0), 0 2px 8px rgba(220, 38, 38, 0.5);
+    box-shadow: 0 0 0 8px transparent,
+                0 2px 8px color-mix(in srgb, currentColor 50%, transparent);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0), 0 2px 8px rgba(220, 38, 38, 0.5);
+    box-shadow: 0 0 0 0 transparent,
+                0 2px 8px color-mix(in srgb, currentColor 50%, transparent);
   }
 }
 
 .marker-pulse {
   animation: marker-pulse 2s ease-out infinite;
+}
+
+/* Spinning rotor for wind-turbine markers — only the blade group (.wt-blades)
+   turns, so the tower stays put. Driven by the .wind-spin class on the icon. */
+@keyframes wind-spin {
+  to { transform: rotate(360deg); }
+}
+.wind-spin .wt-blades {
+  animation: wind-spin 1.8s linear infinite;
+  transform-box: view-box;
+  transform-origin: 12px 10px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wind-spin .wt-blades { animation: none; }
+}
+
+/* Wind-turbine markers — drawn as a clean white silhouette with a refined,
+   restrained drop-shadow stack. A very tight 1 px sky tint just outside the
+   strokes does the heavy lifting for readability; a soft mid-radius wash
+   adds depth without going neon; a small dark ground-shadow anchors the
+   turbine on the map. Designed to read as a professional cartographic
+   symbol, not a video-game effect. */
+.wind-marker-icon {
+  filter:
+    drop-shadow(0 0 0.6px rgba(15, 23, 42, 0.85))
+    drop-shadow(0 0 2.5px rgba(8, 145, 178, 0.35))
+    drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
 }
 
 @keyframes submap-zoom-in {
@@ -146,4 +185,20 @@
 
 .submap-exit {
   animation: submap-zoom-out 0.35s cubic-bezier(0.4, 0, 0.8, 0) forwards;
+}
+
+/* "View as chart" trigger — a very subtle, slow green breathe so it reads as
+   the primary action without being distracting. */
+@keyframes chart-glow {
+  0%, 100% { box-shadow: 0 0 4px 0 rgba(16, 185, 129, 0.18); }
+  50%      { box-shadow: 0 0 8px 1px rgba(16, 185, 129, 0.34); }
+}
+.btn-chart-glow {
+  animation: chart-glow 3.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-chart-glow {
+    animation: none;
+    box-shadow: 0 0 6px 1px rgba(16, 185, 129, 0.25);
+  }
 }

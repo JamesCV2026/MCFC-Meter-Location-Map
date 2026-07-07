@@ -22,7 +22,23 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- App: `artifacts/energy-map/` (Vite + React campus energy map)
+- **Layout source of truth** — the permanent positions of everything on the canvas:
+  - `src/data/assets.ts` — asset markers (x/y % of canvas) + the `AssetType` union
+  - `src/data/assetTypes.ts` — registry of every marker type (label, icon, colour);
+    add a new type here and it flows to markers, legend, filters and the dialog
+  - `src/data/sites.ts` — site labels (x/y %)
+  - `src/data/stickers.ts` — image stickers (x/y/width/rotation)
+  - `src/data/submaps.ts` — sub-map images
+- Map images: `attached_assets/` (referenced via the `@assets` alias)
+
+## Gotchas
+
+- The in-app edit modes ("Edit positions", "Move labels", drag stickers) only
+  save to the browser (`localStorage`, keys prefixed `energy-map-`). To make a
+  layout permanent, bake the coordinates into the `src/data/*.ts` files above.
+- Map images must keep a 16:9 ratio — the canvas hard-codes `aspectRatio: 16/9`
+  so markers don't collapse while the (large) image loads.
 
 ## Architecture decisions
 
