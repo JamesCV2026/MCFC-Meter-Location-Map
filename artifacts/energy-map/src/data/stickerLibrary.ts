@@ -309,7 +309,7 @@ export function useStickerLibrary(view: string) {
       try {
         localStorage.setItem(UPLOADS_KEY, JSON.stringify(next));
       } catch {
-        return { ok: false, error: 'Browser storage is full — remove some uploaded stickers and try again.' };
+        return { ok: false, error: 'Browser storage is full. Remove some uploaded stickers and try again.' };
       }
       setUploads(next);
       return { ok: true };

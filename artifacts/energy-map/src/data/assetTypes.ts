@@ -1,4 +1,4 @@
-import { Zap, Building, Flame, CircuitBoard, Battery, Sun, type LucideIcon } from 'lucide-react';
+import { Zap, Building, Flame, CircuitBoard, Battery, Sun, Gauge, Plug, Network, type LucideIcon } from 'lucide-react';
 import { WindTurbineIcon } from '@/components/WindTurbineIcon';
 import { TransformerIcon } from '@/components/TransformerIcon';
 import { SubstationIcon } from '@/components/SubstationIcon';
@@ -30,6 +30,39 @@ export const assetTypeConfig: Record<AssetType, AssetTypeMeta> = {
   'battery': { label: 'Battery', Icon: Battery, color: '#16a34a' },     // green
   'solar-panel': { label: 'Solar Panel', Icon: Sun, color: '#f59e0b' }, // amber
   'building': { label: 'Building', Icon: Building, color: '#ca8a04' },  // mustard
+  // Meter-map types (added 2026-07).
+  'meter-behind': { label: 'Behind the Meter', Icon: Gauge, color: '#16a34a' },   // green
+  'meter-front': { label: 'Grid Meter', Icon: Gauge, color: '#2563eb' }, // blue
+  'inverter': { label: 'Inverters', Icon: Plug, color: '#9333ea' },    // purple
+  'tower': { label: 'Tower', Icon: Building, color: '#0ea5e9' },        // sky blue
+  'idno': { label: 'IDNO', Icon: Network, color: '#db2777' },          // pink — IDNO-owned (Independent Distribution Network Operator)
 };
 
 export const ALL_ASSET_TYPES = Object.keys(assetTypeConfig) as AssetType[];
+
+// ---------------------------------------------------------------------------
+// ENABLED_TYPES — the single switch that controls which asset types appear in
+// the legend/filter and are shown on the map by default. This is how you make
+// a focused map (e.g. the Meter map) WITHOUT deleting anything.
+//
+//   • To HIDE a type from the map + legend: remove its key from this list.
+//   • To RE-ADD it later (wind turbines, MPAN, substations, etc.): just put its
+//     key back in this list. Its markers reappear instantly — no data is ever
+//     deleted; the map simply filters by type. Nothing else to change.
+//
+// Every key here must exist in assetTypeConfig above. 'building' is intentionally
+// omitted (buildings render as stickers, not filter markers).
+//
+// Full set, for easy reinstatement — uncomment/copy any you want back:
+//   'mpan', 'substation', 'transformer', 'wind-turbine', 'chp', 'board',
+//   'diesel-generator', 'battery',
+// ---------------------------------------------------------------------------
+export const ENABLED_TYPES: AssetType[] = [
+  'meter-behind',
+  'meter-front',
+  'inverter',
+  'solar-panel',
+  'substation',
+  'tower',
+  'idno',
+];

@@ -47,3 +47,7 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Untracked deploy clones (own nested .git) — do not commit
+artifacts/energy-map/mcfc-deploy-clone/
+artifacts/energy-map/mcfc-map-deploy.zip

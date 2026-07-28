@@ -1,5 +1,5 @@
 import { AssetType } from '@/data/assets';
-import { assetTypeConfig, ALL_ASSET_TYPES } from '@/data/assetTypes';
+import { assetTypeConfig, ENABLED_TYPES } from '@/data/assetTypes';
 
 interface FilterPanelProps {
   visible: Set<AssetType>;
@@ -18,8 +18,9 @@ export function FilterPanel({ visible, onChange, embedded = false }: FilterPanel
         Filter Infrastructure
       </p>
       <ul className="space-y-1.5">
-        {/* 'building' is no longer shown as a filter — buildings live as stickers */}
-        {ALL_ASSET_TYPES.filter((type) => type !== 'building').map((type) => {
+        {/* Driven by ENABLED_TYPES (see assetTypes.ts) so hiding/re-adding a
+            type is a one-line change. 'building' lives as stickers, not a filter. */}
+        {ENABLED_TYPES.filter((type) => type !== 'building').map((type) => {
           const { label, color, Icon } = assetTypeConfig[type];
           const checked = visible.has(type);
           return (

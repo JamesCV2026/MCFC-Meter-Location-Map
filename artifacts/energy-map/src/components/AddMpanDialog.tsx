@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, MapPin } from 'lucide-react';
 import { AssetType } from '@/data/assets';
-import { assetTypeConfig, ALL_ASSET_TYPES } from '@/data/assetTypes';
+import { assetTypeConfig, ENABLED_TYPES } from '@/data/assetTypes';
 import { nextAssetName } from '@/data/assetNaming';
 
 interface AddMpanDialogProps {
@@ -73,7 +73,7 @@ export function AddMpanDialog({ x, y, onConfirm, onCancel }: AddMpanDialogProps)
               Asset type <span className="text-red-500">*</span>
             </label>
             <div className="grid grid-cols-2 gap-1.5">
-              {ALL_ASSET_TYPES.map((t) => {
+              {ENABLED_TYPES.map((t) => {
                 const meta = assetTypeConfig[t];
                 const Icon = meta.Icon;
                 const active = type === t;

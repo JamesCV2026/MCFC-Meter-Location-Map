@@ -38,12 +38,14 @@ export const sites: Site[] = [
     zoom: 2.8,
     subMapId: 'cfa-map',
   },
-  {
-    id: 'co-op-live',
-    name: 'Co-op Live',
-    x: 36.07,
-    y: 10.69,
-    zoom: 2.8,
-    subMapId: 'co-op-live-map',
-  },
+  // Co-op Live removed for the Meter map (2026-07). To bring it back,
+  // uncomment this block and the matching entry in submaps.ts.
+  // {
+  //   id: 'co-op-live',
+  //   name: 'Co-op Live',
+  //   x: 36.07,
+  //   y: 10.69,
+  //   zoom: 2.8,
+  //   subMapId: 'co-op-live-map',
+  // },
 ];

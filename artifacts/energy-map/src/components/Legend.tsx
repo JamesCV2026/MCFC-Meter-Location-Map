@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { BarChart3, Table } from 'lucide-react';
 import { submaps } from '@/data/submaps';
 import { ETIHAD_SITES } from '@/data/etihadSites';
 import { CFA_SITES } from '@/data/cfaSites';
@@ -16,13 +17,19 @@ const SITES_BY_SUBMAP: Record<string, { id: string; label: string }[]> = {
 interface LegendProps {
   // Placed assets grouped by the view (sub-map) they sit on.
   stickersByView: Record<string, { id: string; label: string }[]>;
+  // Optional "View as chart" trigger rendered as a footer button so it sits
+  // directly under the assets list (top-left of the map).
+  onOpenChart?: () => void;
+  // Optional "Energy data" trigger — opens the bottom data drawer from the
+  // same top-left footer, next to the chart button.
+  onOpenData?: () => void;
 }
 
 // Campus asset legend — lists every placed asset, grouped by sub-map area
 // (Etihad Stadium / City Football Academy / Co-op Live). In the editor, click
 // any entry to rename it; the new name applies everywhere that asset shows
 // (its info panel too). The published view-only build is read-only.
-export function Legend({ stickersByView }: LegendProps) {
+export function Legend({ stickersByView, onOpenChart, onOpenData }: LegendProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const overrides = loadAllPanelInfo();
@@ -42,9 +49,12 @@ export function Legend({ stickersByView }: LegendProps) {
       onClick={(e) => e.stopPropagation()}
       // Responsive: shrink the panel on narrow screens so it leaves more
       // room for the map. Hidden entirely below ~480 px (hidden xs:block —
-      // use the legend toggle button to show it).
-      className="hidden xs:block absolute top-3 left-3 z-20 bg-white/95 backdrop-blur-sm rounded-lg border border-gray-200 shadow-lg p-2 sm:p-3 min-w-[140px] sm:min-w-[170px] max-w-[180px] sm:max-w-[230px] max-h-[78%] overflow-y-auto text-[10px] sm:text-xs"
+      // use the legend toggle button to show it). The panel is now a
+      // flex column so the assets list can scroll internally while the
+      // "View as chart" footer stays pinned at the bottom.
+      className="hidden xs:flex flex-col absolute top-3 left-3 z-20 bg-white/95 backdrop-blur-sm rounded-lg border border-gray-200 shadow-lg min-w-[140px] sm:min-w-[170px] max-w-[180px] sm:max-w-[230px] max-h-[78%] text-[10px] sm:text-xs overflow-hidden"
     >
+      <div className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-3">
       <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2 leading-none">
         Assets
       </p>
@@ -95,6 +105,31 @@ export function Legend({ stickersByView }: LegendProps) {
           );
         })}
       </div>
+      </div>
+      {onOpenChart && (
+        <button
+          type="button"
+          data-testid="btn-open-chart"
+          onClick={onOpenChart}
+          className="shrink-0 border-t border-emerald-700/30 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 py-2.5 flex items-center justify-center gap-1.5 transition-colors"
+          title="View the consumption vs generation breakdown as a stacked bar chart."
+        >
+          <BarChart3 size={14} className="shrink-0" />
+          View as chart ↗
+        </button>
+      )}
+      {onOpenData && (
+        <button
+          type="button"
+          data-testid="btn-open-data"
+          onClick={onOpenData}
+          className="shrink-0 border-t border-emerald-600/20 bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-xs px-3 py-2.5 flex items-center justify-center gap-1.5 transition-colors"
+          title="Open the consumption & generation data table (half-hourly totals per site)."
+        >
+          <Table size={14} className="shrink-0" />
+          Energy data ↗
+        </button>
+      )}
     </div>
   );
 }

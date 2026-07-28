@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { ArrowLeft, Move, Lock, Unlock, Check, Plus, Minus, MapPin, Tag, X, Sticker, Eye, EyeOff, List, Cable as CableIcon, Undo2, Trash2, Unlink, Scissors, ArrowLeftRight } from 'lucide-react';
+import { ArrowLeft, Move, Lock, Unlock, Check, Plus, Minus, MapPin, Tag, X, Sticker, Eye, EyeOff, List, Filter, Cable as CableIcon, Undo2, Trash2, Unlink, Scissors, ArrowLeftRight } from 'lucide-react';
 import { EnergyAsset, AssetType } from '@/data/assets';
-import { assetTypeConfig, ALL_ASSET_TYPES } from '@/data/assetTypes';
+import { assetTypeConfig, ENABLED_TYPES } from '@/data/assetTypes';
 import { Site } from '@/data/sites';
 import { Cable, CableType, CablePoint, cableTypeConfig, ALL_CABLE_TYPES, CABLE_COLORS } from '@/data/cables';
 import { CableLayer } from './CableLayer';
@@ -14,11 +14,7 @@ import { AddLabelDialog } from './AddLabelDialog';
 import { StickerOverlay } from './StickerOverlay';
 import { StickerPicker } from './StickerPicker';
 import { AssetInfoPanel } from './AssetInfoPanel';
-import { EtihadChooser } from './EtihadChooser';
-import { ETIHAD_SITE_IDS } from '@/data/etihadSites';
-import { CfaChooser } from './CfaChooser';
-import { CFA_SITE_IDS } from '@/data/cfaSites';
-import { useStickerLibrary, stickerToPanelItem, assetToPanelItem } from '@/data/stickerLibrary';
+import { useStickerLibrary, stickerToPanelItem } from '@/data/stickerLibrary';
 import { FilterPanel } from './FilterPanel';
 import { Legend } from './Legend';
 import { ServicesDuctOverlay } from './ServicesDuctOverlay';
@@ -144,6 +140,16 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
   const subMap = getSubMap(subMapId);
   const [assets, setAssets] = useState<EnergyAsset[]>(() => loadAssets(subMapId));
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  // Forgiving hover — keep the tooltip alive briefly after the cursor leaves.
+  const hoverCloseTimer = useRef<number | null>(null);
+  const openHover = useCallback((id: string) => {
+    if (hoverCloseTimer.current !== null) { clearTimeout(hoverCloseTimer.current); hoverCloseTimer.current = null; }
+    setHoveredId(id);
+  }, []);
+  const scheduleHoverClose = useCallback(() => {
+    if (hoverCloseTimer.current !== null) clearTimeout(hoverCloseTimer.current);
+    hoverCloseTimer.current = window.setTimeout(() => { setHoveredId(null); hoverCloseTimer.current = null; }, 180);
+  }, []);
   const [selectedAsset, setSelectedAsset] = useState<EnergyAsset | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [locked, setLocked] = useState(false);
@@ -167,7 +173,7 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
   const stickerLib = useStickerLibrary(subMapId);
 
   // Asset-type filter + sticker/label visibility — mirrors the main overview map.
-  const [visibleTypes, setVisibleTypes] = useState<Set<AssetType>>(() => new Set(ALL_ASSET_TYPES));
+  const [visibleTypes, setVisibleTypes] = useState<Set<AssetType>>(() => new Set(ENABLED_TYPES));
   const [stickersHidden, setStickersHidden] = useState(false);
   // Top layer (z > markers) where every sticker portals its name label, so
   // labels are never hidden behind a nearby marker icon.
@@ -186,15 +192,24 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
       return next;
     });
   }, []);
+  // Hide/show the infrastructure filter panel on sub-maps.
+  const [filterHidden, setFilterHidden] = useState<boolean>(() => {
+    try { return localStorage.getItem('energy-map-submap-filter-hidden') === 'true'; } catch { return false; }
+  });
+  const handleToggleFilter = useCallback(() => {
+    setFilterHidden((v) => {
+      const next = !v;
+      try { localStorage.setItem('energy-map-submap-filter-hidden', String(next)); } catch { /* ignore */ }
+      return next;
+    });
+  }, []);
 
   // HV / LV services-duct overlay toggles (CFA sub-map only). On by default.
   const [showHvDucts, setShowHvDucts] = useState(true);
   const [showLvDucts, setShowLvDucts] = useState(true);
 
   // Etihad Stadium site chooser — opens when the stadium sticker is clicked.
-  const [etihadChooserOpen, setEtihadChooserOpen] = useState(false);
   // CFA site chooser — opens when the Indoor Pitch sticker is clicked.
-  const [cfaChooserOpen, setCfaChooserOpen] = useState(false);
 
   // Map zoom & pan — mirrors the main overview map.
   const [mapZoom, setMapZoom] = useState(1);
@@ -298,9 +313,12 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
 
   const handleOpen = useCallback((asset: EnergyAsset) => {
     if (editMode) return;
+    // Close any sticker info panel before opening the marker SidePanel so
+    // panels never stack on top of each other.
+    stickerLib.setInfoItem(null);
     setSelectedAsset(asset);
     setHoveredId(null);
-  }, [editMode]);
+  }, [editMode, stickerLib]);
 
   const handleMarkerMouseDown = useCallback((e: React.MouseEvent, id: string) => {
     if (!editMode) return;
@@ -412,6 +430,15 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
     });
     setSelectedAsset((prev) => prev?.id === id ? null : prev);
     setHoveredId((prev) => prev === id ? null : prev);
+  }, [subMapId]);
+
+  const handleSetAssetQuantity = useCallback((id: string, q: number) => {
+    const clamped = Math.max(1, Math.round(q));
+    setAssets((prev) => {
+      const next = prev.map((a) => (a.id === id ? { ...a, quantity: clamped } : a));
+      saveAssets(subMapId, next);
+      return next;
+    });
   }, [subMapId]);
 
   // ── Cables ──────────────────────────────────────────────────────────────
@@ -796,15 +823,16 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
 
   return (
     <div
-      className={`min-h-screen bg-slate-100 flex flex-col ${isExiting ? 'submap-exit' : 'submap-enter'}`}
+      className={`h-screen overflow-hidden bg-slate-100 flex flex-col ${isExiting ? 'submap-exit' : 'submap-enter'}`}
       style={{ transformOrigin: `${originX}% ${originY}%` }}
       onAnimationEnd={isExiting ? onBack : undefined}
     >
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-4 shrink-0 shadow-sm">
+      {/* Header — allows horizontal scroll if the toolbar buttons don't
+          fit, so the page below can't overflow horizontally. */}
+      <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-4 shrink-0 shadow-sm overflow-x-auto">
         <button
           onClick={handleBack}
-          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500 text-white font-semibold shadow-sm hover:bg-emerald-400 transition-colors shrink-0"
         >
           <ArrowLeft size={15} />
           <span className="text-xs">Overview</span>
@@ -1022,7 +1050,7 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
       {labelEditMode && (
         <div className="bg-indigo-50 border-b border-indigo-200 text-indigo-700 px-6 py-2 flex items-center gap-3 text-xs font-medium">
           <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse shrink-0" />
-          Drag labels to reposition — click ✕ on a label to delete it
+          Drag labels to reposition. Click ✕ on a label to delete it.
           <button
             onClick={() => setLabelEditMode(false)}
             className="ml-auto text-indigo-500 hover:text-indigo-800 underline"
@@ -1078,7 +1106,7 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
       {cableEditMode && (
         <div className="bg-amber-600 text-white px-6 py-2.5 flex items-center gap-3 text-xs font-medium">
           <span className="w-2 h-2 rounded-full bg-white animate-pulse shrink-0" />
-          <span>Edit cables — click a cable to select it <span className="font-bold">then pick a colour</span> · drag points to move · <span className="font-bold">click a point</span> to delete / detach it · <span className="font-bold">click a segment</span> to delete it · <span className="font-bold">+</span> adds a point</span>
+          <span>Edit cables. Click a cable to select it <span className="font-bold">then pick a colour</span> · drag points to move · <span className="font-bold">click a point</span> to delete / detach it · <span className="font-bold">click a segment</span> to delete it · <span className="font-bold">+</span> adds a point</span>
           <button
             onClick={handleExitCableEditMode}
             className="ml-auto text-amber-100 hover:text-white underline shrink-0"
@@ -1089,29 +1117,25 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
       )}
 
 
-      {/* Map area */}
-      <main className="flex-1 flex items-start justify-center p-6">
+      {/* Map area — same fit-in-viewport treatment as the overview:
+          the 16:9 sub-map always fits inside the visible area with
+          letterbox bars on whichever axis has slack. No scrolling required. */}
+      <main className="flex-1 min-h-0 flex items-center justify-center overflow-hidden p-3">
         <div
           ref={mapRef}
           data-testid="map-container"
-          className={`relative w-full rounded-xl overflow-hidden shadow-xl border border-gray-200 bg-white ${
+          className={`relative rounded-xl overflow-hidden shadow-xl border border-gray-200 bg-white mx-auto ${
             editMode || addMpanMode || addLabelMode || cableMode
               ? 'cursor-crosshair'
               : mapZoom > 1
                 ? isPanning ? 'cursor-grabbing' : 'cursor-grab'
                 : ''
           }`}
-          // Same responsive-fit treatment as the overview map. 16:9 aspect
-          // ratio capped at the available viewport height (header ~80 px,
-          // page padding ~60 px) so the sub-map always fits the screen.
           style={{
-            // Full-bleed 16:9, capped at 1600px wide on large screens. Height
-            // is derived from the width and deliberately NOT clamped: an earlier
-            // max-height cap broke the 16:9 ratio on short/wide viewports and
-            // misaligned every %-positioned marker (same bug as the overview
-            // map). The parent scrolls when the map is taller than the viewport.
-            maxWidth: 1600,
             aspectRatio: '16 / 9',
+            height: '100%',
+            maxWidth: '100%',
+            maxHeight: '100%',
           }}
           onClick={handleMapClick}
           onMouseDown={handleMapMouseDown}
@@ -1156,14 +1180,15 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
               framed={sticker.framed}
               objectPosition={sticker.objectPosition}
               editMode={stickerLib.stickerEditMode}
+              // Every sticker click in a sub-map opens the same in-context
+              // info panel. The previous "chooser" modal (7-card Etihad site
+              // picker, 6-card CFA picker) is removed per user request —
+              // clicking a big photo sticker should give you the whole-site
+              // overview panel, not force you to pick a sub-building first.
+              // Close the marker SidePanel first so panels never stack.
               onOpenInfo={() => {
-                if (subMapId === 'etihad-stadium-map' && /etihad stadium/i.test(sticker.label)) {
-                  setEtihadChooserOpen(true);
-                } else if (subMapId === 'cfa-map' && /indoor pitch/i.test(sticker.label)) {
-                  setCfaChooserOpen(true);
-                } else {
-                  stickerLib.setInfoItem(stickerToPanelItem(sticker));
-                }
+                setSelectedAsset(null);
+                stickerLib.setInfoItem(stickerToPanelItem(sticker));
               }}
               selected={stickerLib.selectedId === sticker.id}
               onSelect={() => stickerLib.setSelectedId(sticker.id)}
@@ -1317,11 +1342,13 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
           })()}
 
           {/* MPAN markers */}
-          {assets.filter((a) => visibleTypes.has(a.type)).map((asset) => {
+          {assets.filter((a) => visibleTypes.has(a.idno ? 'idno' : a.type)).map((asset) => {
             const isHovered = hoveredId === asset.id;
             const isDragging = draggingRef.current?.id === asset.id;
             const meta = assetTypeConfig[asset.type];
             const TypeIcon = meta.Icon;
+            // IDNO markers keep their real icon but take the IDNO colour.
+            const markerColor = asset.idno ? assetTypeConfig['idno'].color : meta.color;
             // Building markers render a little larger so they stand out;
             // wind turbines larger still, so the spinning-blade animation reads.
             // Wind turbines render as a refined white silhouette with a
@@ -1355,8 +1382,8 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
                   // owns every click, so markers must not intercept events.
                   pointerEvents: cableEditMode ? 'none' : undefined,
                 }}
-                onMouseEnter={() => { if (!editMode && !cableMode) setHoveredId(asset.id); }}
-                onMouseLeave={() => setHoveredId(null)}
+                onMouseEnter={() => { if (!editMode && !cableMode) openHover(asset.id); }}
+                onMouseLeave={scheduleHoverClose}
                 onMouseDown={(e) => handleMarkerMouseDown(e, asset.id)}
                 onClick={() => { if (!editMode && !cableMode) handleOpen(asset); }}
               >
@@ -1372,8 +1399,8 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
                       style={{
                         width: markerSize,
                         height: markerSize,
-                        color: meta.color,
-                        background: meta.color,
+                        color: markerColor,
+                        background: markerColor,
                         border: `2px solid ${editMode ? '#fbbf24' : 'white'}`,
                         boxShadow: editMode
                           ? '0 0 0 3px rgba(251,191,36,0.4), 0 2px 8px rgba(0,0,0,0.4)'
@@ -1416,7 +1443,7 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
                 )}
 
                 {!editMode && isHovered && (
-                  <MarkerTooltip asset={asset} onViewData={() => handleOpen(asset)} onDelete={() => handleDeleteAsset(asset.id)} flipDown={asset.y < 25} />
+                  <MarkerTooltip asset={asset} onViewData={() => handleOpen(asset)} onDelete={() => handleDeleteAsset(asset.id)} onSetQuantity={(q) => handleSetAssetQuantity(asset.id, q)} flipDown={asset.y < 25} />
                 )}
               </div>
             );
@@ -1479,7 +1506,7 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
             className="absolute top-3 right-3 z-20 flex flex-col gap-2 w-[180px]"
             onClick={(e) => e.stopPropagation()}
           >
-            <FilterPanel embedded visible={visibleTypes} onChange={handleFilterChange} />
+            {!filterHidden && <FilterPanel embedded visible={visibleTypes} onChange={handleFilterChange} />}
             {subMapId === 'cfa-map' && (
               <div
                 data-testid="services-duct-legend"
@@ -1580,6 +1607,15 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
               <List size={13} className={legendHidden ? 'text-gray-400' : 'text-indigo-500'} />
               {legendHidden ? 'Show assets' : 'Hide assets'}
             </button>
+            <button
+              data-testid="btn-toggle-filter"
+              onClick={handleToggleFilter}
+              className="flex items-center gap-1.5 px-3 py-2 hover:bg-gray-50 transition-colors border-t border-gray-200"
+              title={filterHidden ? 'Show the filter panel' : 'Hide the filter panel'}
+            >
+              <Filter size={13} className={filterHidden ? 'text-gray-400' : 'text-indigo-500'} />
+              {filterHidden ? 'Show filters' : 'Hide filters'}
+            </button>
           </div>
           </div>
         </div>
@@ -1621,31 +1657,6 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
         <AssetInfoPanel
           item={stickerLib.infoItem}
           onClose={() => stickerLib.setInfoItem(null)}
-          onBack={ETIHAD_SITE_IDS.has(stickerLib.infoItem.id)
-            ? () => { stickerLib.setInfoItem(null); setEtihadChooserOpen(true); }
-            : CFA_SITE_IDS.has(stickerLib.infoItem.id)
-            ? () => { stickerLib.setInfoItem(null); setCfaChooserOpen(true); }
-            : undefined}
-        />
-      )}
-
-      {etihadChooserOpen && (
-        <EtihadChooser
-          onClose={() => setEtihadChooserOpen(false)}
-          onSelect={(site) => {
-            setEtihadChooserOpen(false);
-            stickerLib.setInfoItem(assetToPanelItem({ id: site.id, name: site.name }));
-          }}
-        />
-      )}
-
-      {cfaChooserOpen && (
-        <CfaChooser
-          onClose={() => setCfaChooserOpen(false)}
-          onSelect={(site) => {
-            setCfaChooserOpen(false);
-            stickerLib.setInfoItem(assetToPanelItem({ id: site.id, name: site.name }));
-          }}
         />
       )}
     </div>

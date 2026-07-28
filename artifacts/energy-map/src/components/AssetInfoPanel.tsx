@@ -4,9 +4,11 @@ import { fileToPhotoDataUrl, saveStickerPhotos } from '@/data/stickerLibrary';
 import type { AssetPanelItem } from '@/data/stickerLibrary';
 import { VIEW_ONLY } from '@/viewOnly';
 import { energyForName, energyTotal } from '@/data/energyData';
+import { savingsForName } from '@/data/savingsData';
 import { panelInfoFor, savePanelInfo, PanelInfo } from '@/data/panelInfo';
 import { dataSourcesFor } from '@/data/dataSourceMap';
 import { MonthlyEnergyTable } from './MonthlyEnergyTable';
+import { SolarPanelBody } from './SolarPanelBody';
 import { HHDataModal } from './HHDataModal';
 
 interface AssetInfoPanelProps {
@@ -62,6 +64,10 @@ export function AssetInfoPanel({ item, onClose, onBack }: AssetInfoPanelProps) {
   // a metric the building does not record shows "—" rather than a placeholder.
   const energy = energyForName(displayTitle);
   const hasEnergy = !!energy && (!!energy.consumption || !!energy.generation);
+  // Solar sites (those with 25-year savings data) render the SAME tabbed
+  // Generation + Savings body as their Solar Array marker, so a building blob
+  // and its solar array panel are practically identical.
+  const solarSite = !!savingsForName(displayTitle);
 
   // Real-data only — no placeholder figures. If a metric isn't recorded for
   // this asset we leave the card off entirely, so panels for sites without
@@ -158,7 +164,7 @@ export function AssetInfoPanel({ item, onClose, onBack }: AssetInfoPanelProps) {
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 text-gray-400">
               <ImageOff size={26} />
-              <span className="text-xs">{VIEW_ONLY ? 'No photo' : 'No photo yet — use "Add photo"'}</span>
+              <span className="text-xs">{VIEW_ONLY ? 'No photo' : 'No photo yet. Use "Add photo".'}</span>
             </div>
           )}
 
@@ -264,7 +270,7 @@ export function AssetInfoPanel({ item, onClose, onBack }: AssetInfoPanelProps) {
                 data-testid="asset-info-narrative-input"
                 value={narrativeDraft}
                 onChange={(e) => setNarrativeDraft(e.target.value)}
-                placeholder="Narrative / description (optional) — shown instead of the data cards"
+                placeholder="Narrative / description (optional). Shown instead of the data cards."
                 rows={4}
                 className="w-full text-xs text-gray-600 border border-gray-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-y"
               />
@@ -304,7 +310,7 @@ export function AssetInfoPanel({ item, onClose, onBack }: AssetInfoPanelProps) {
             </div>
           )}
 
-          {hasData && (
+          {hasData && !solarSite && (
             <div className="grid grid-cols-2 gap-2.5 mt-4">
               {consumption && (
                 <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-3">
@@ -330,11 +336,15 @@ export function AssetInfoPanel({ item, onClose, onBack }: AssetInfoPanelProps) {
               panel. Applies to every generation series in the map: Phase 1
               actuals are truncated to Jan-Dec 2025; modelled generation series
               are 12-month annuals as supplied. */}
-          {generation && (
+          {generation && !solarSite && (
             <p className="text-[10px] text-gray-400 italic mt-1.5">
-              Generation total is a 12-month figure (Jan to Dec 2025 for actuals; 12-month annual for modelled).
+              Generation total is a 12-month figure (Jul 2025 to Jun 2026 for metered actuals; 12-month annual for modelled).
             </p>
           )}
+
+          {/* Solar sites: the full tabbed Generation + Savings body, identical
+              to the Solar Array marker's panel. */}
+          {solarSite && <SolarPanelBody name={displayTitle} />}
 
           {narrative && (
             <p
@@ -345,13 +355,13 @@ export function AssetInfoPanel({ item, onClose, onBack }: AssetInfoPanelProps) {
             </p>
           )}
 
-          {energy && <MonthlyEnergyTable energy={energy} name={displayTitle} />}
+          {energy && !solarSite && <MonthlyEnergyTable energy={energy} name={displayTitle} />}
 
           {/* Raw HH data viewer trigger — one button per series. When an
               asset has both consumption AND generation (Hotel, Commercial,
               MCWFC, Co-op Live) the user gets BOTH buttons, so neither
               series is hidden behind the other. */}
-          {(() => {
+          {!solarSite && (() => {
             const entry = dataSourcesFor(displayTitle);
             if (!entry) return null;
             const buttons: { kind: 'Consumption' | 'Generation'; url: string; label: string }[] = [];

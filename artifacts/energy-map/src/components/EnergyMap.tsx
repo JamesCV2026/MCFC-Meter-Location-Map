@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { Move, Lock, Unlock, Check, ZoomOut, Plus, Minus, Tag, X, Sticker, Cable as CableIcon, Undo2, Trash2, Unlink, Scissors, ArrowLeftRight, Frame, List, Filter, Download, BarChart3 } from 'lucide-react';
+import { Move, Lock, Unlock, Check, ZoomOut, Plus, Minus, Tag, X, Sticker, Cable as CableIcon, Undo2, Trash2, Unlink, Scissors, ArrowLeftRight, Frame, List, Filter, Download } from 'lucide-react';
 import { EnergyAsset, AssetType } from '@/data/assets';
-import { assetTypeConfig, ALL_ASSET_TYPES } from '@/data/assetTypes';
+import { assetTypeConfig, ENABLED_TYPES } from '@/data/assetTypes';
 import { sites as configSites, Site } from '@/data/sites';
 import { stickers as configStickers } from '@/data/stickers';
 import { cables as configCables, Cable, CableType, CablePoint, cableTypeConfig, ALL_CABLE_TYPES, CABLE_COLORS } from '@/data/cables';
@@ -275,8 +275,19 @@ export function EnergyMap() {
   const [addMpanMode, setAddMpanMode] = useState(false);
   const [pendingMpan, setPendingMpan] = useState<{ x: number; y: number } | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  // Forgiving hover: keep the tooltip alive for a beat after the cursor leaves,
+  // so moving from marker to popup (or a small wobble) doesn't dismiss it.
+  const hoverCloseTimer = useRef<number | null>(null);
+  const openHover = useCallback((id: string) => {
+    if (hoverCloseTimer.current !== null) { clearTimeout(hoverCloseTimer.current); hoverCloseTimer.current = null; }
+    setHoveredId(id);
+  }, []);
+  const scheduleHoverClose = useCallback(() => {
+    if (hoverCloseTimer.current !== null) clearTimeout(hoverCloseTimer.current);
+    hoverCloseTimer.current = window.setTimeout(() => { setHoveredId(null); hoverCloseTimer.current = null; }, 180);
+  }, []);
   const [selectedAsset, setSelectedAsset] = useState<EnergyAsset | null>(null);
-  const [visibleTypes, setVisibleTypes] = useState<Set<AssetType>>(new Set(ALL_ASSET_TYPES));
+  const [visibleTypes, setVisibleTypes] = useState<Set<AssetType>>(new Set(ENABLED_TYPES));
   const [editMode, setEditMode] = useState(false);
   const [locked, setLocked] = useState(false);
   const [zoomedSite, setZoomedSite] = useState<Site | null>(null);
@@ -321,6 +332,9 @@ export function EnergyMap() {
     () => [...configCables, ...loadCables()].map((c) => ({ ...c, points: dedupeCablePoints(c.points, assets) })),
   );
   const [cableMode, setCableMode] = useState<CableType | null>(null);
+  // Simple "Connect" mode: click marker A then marker B to draw an anchored line
+  // between them (reuses the cable machinery; auto-finishes after 2 markers).
+  const [connectMode, setConnectMode] = useState(false);
   const [cableEditMode, setCableEditMode] = useState(false);
   const [draftPoints, setDraftPoints] = useState<CablePoint[]>([]);
   const [cableCursor, setCableCursor] = useState<{ x: number; y: number } | null>(null);
@@ -419,17 +433,20 @@ export function EnergyMap() {
 
   const handleOpen = useCallback((asset: EnergyAsset) => {
     if (editMode) return;
+    // Always close whichever panel might already be open before opening the
+    // new one — panels must never stack. The user's rule: clicking any asset
+    // while a panel is open closes that panel first, then opens the new one.
+    setSelectedStickerId(null);
+    setHoveredId(null);
     // A few named markers open the rich asset info panel instead of SidePanel.
     if (PANEL_NAMES.has(asset.name)) {
-      stickerLib.setInfoItem(assetToPanelItem(asset));
-      setSelectedStickerId(null);
       setSelectedAsset(null);
-      setHoveredId(null);
+      stickerLib.setInfoItem(assetToPanelItem(asset));
       return;
     }
+    stickerLib.setInfoItem(null);
     setSelectedAsset(asset);
-    setHoveredId(null);
-  }, [editMode]);
+  }, [editMode, stickerLib]);
 
   const handleStickerUpdate = useCallback((id: string, updates: Partial<StickerTransform>) => {
     setStickerTransforms((prev) => {
@@ -543,6 +560,12 @@ export function EnergyMap() {
       const rect = mapRef.current.getBoundingClientRect();
       const pt = screenToMapPct(e.clientX, e.clientY, rect, mapZoom, mapPan);
       const snap = findSnapAsset(pt.x, pt.y, assets.filter((a) => !deletedAssetIds.has(a.id)));
+      // Connect mode only latches onto markers; ignore clicks on empty space.
+      if (connectMode) {
+        if (!snap) return;
+        setDraftPoints((prev) => [...prev, { x: snap.x, y: snap.y, assetId: snap.id }]);
+        return;
+      }
       const point: CablePoint = snap
         ? { x: snap.x, y: snap.y, assetId: snap.id }
         : { x: pt.x, y: pt.y };
@@ -563,19 +586,65 @@ export function EnergyMap() {
     }
     handleDeselectSticker();
     setSelectedCableId(null);
-  }, [cableMode, addMpanMode, addLabelMode, handleDeselectSticker, mapZoom, mapPan, assets, deletedAssetIds]);
+  }, [cableMode, connectMode, addMpanMode, addLabelMode, handleDeselectSticker, mapZoom, mapPan, assets, deletedAssetIds]);
 
   const handleSiteClick = useCallback((site: Site) => {
     if (editMode || labelEditMode) return;
+    // Close any open panel before navigating / zooming so panels never stack.
+    setSelectedAsset(null);
+    setSelectedStickerId(null);
+    setHoveredId(null);
+    stickerLib.setInfoItem(null);
     if (site.subMapId) {
       setSubMapOrigin({ x: site.x, y: site.y });
       setActiveSubMapId(site.subMapId);
       return;
     }
     setZoomedSite((prev) => prev?.id === site.id ? null : site);
-    setHoveredId(null);
+  }, [editMode, labelEditMode, stickerLib]);
+
+  // Map a circle sticker/photo asset (Joie Stadium aerial, MIHP Building
+  // photo, Etihad Stadium ring, etc.) to the sub-map it belongs to. Clicking
+  // one of these on the OVERVIEW should navigate straight into its sub-map,
+  // not open the overview info panel — per the client's request. Small
+  // infrastructure marker icons (MPAN / Transformer / etc.) are unaffected.
+  const stickerToSubMap = useCallback((label: string, transform?: StickerTransform): string | null => {
+    // 1. If the placement itself carries a non-'main' view, use it directly.
+    if (transform && 'view' in transform && typeof (transform as { view?: string }).view === 'string') {
+      const v = (transform as { view: string }).view;
+      if (v && v !== 'main') return v;
+    }
+    // 2. Fall back to name matching for baked-in stickers on the overview.
+    const l = (label || '').toLowerCase();
+    if (l.includes('co-op live') || l.includes('coop live') || l.includes('co op live')) return 'co-op-live-map';
+    if (l.includes('etihad stadium') || l.includes('mamma mia')
+      || l.includes('hotel') || l.includes('commercial') || l.includes('north stand')
+      || l.includes('etihad tower')) return 'etihad-stadium-map';
+    if (l.includes('joie') || l.includes('indoor pitch') || l.includes('tv studio')
+      || l.includes('fm building') || l.includes('mihp') || l.includes("women's facility")
+      || l.includes('womens facility') || l.includes('mcwfc') || l.includes('ground mount')
+      || l.includes('performance centre') || l.includes('city football academy')
+      || l.includes('cfa')) return 'cfa-map';
+    return null;
+  }, []);
+
+  const handleStickerCircleClick = useCallback((label: string, position: { x: number; y: number }, transform?: StickerTransform, fallback?: () => void) => {
+    if (editMode || labelEditMode) return;
+    // Whatever this click does next (navigate to a sub-map OR open the info
+    // panel fallback), close any other panel that might already be open so
+    // panels never stack.
     setSelectedAsset(null);
-  }, [editMode, labelEditMode]);
+    setSelectedStickerId(null);
+    setHoveredId(null);
+    stickerLib.setInfoItem(null);
+    const subMapId = stickerToSubMap(label, transform);
+    if (subMapId) {
+      setSubMapOrigin(position);
+      setActiveSubMapId(subMapId);
+      return;
+    }
+    if (fallback) fallback();
+  }, [editMode, labelEditMode, stickerToSubMap, stickerLib]);
 
   const handleZoomOut = useCallback(() => {
     setZoomedSite(null);
@@ -782,6 +851,42 @@ export function EnergyMap() {
     setDraftPoints([]);
     setCableCursor(null);
   }, []);
+
+  // Simple Connect mode: click marker A then marker B → draw an anchored line.
+  const handleEnterConnectMode = useCallback(() => {
+    setConnectMode(true);
+    setCableMode('connection');
+    setDraftPoints([]);
+    setCableCursor(null);
+    setEditMode(false);
+    setAddMpanMode(false);
+    setAddLabelMode(false);
+    setLabelEditMode(false);
+    setCableEditMode(false);
+  }, []);
+
+  const handleExitConnectMode = useCallback(() => {
+    setConnectMode(false);
+    setCableMode(null);
+    setDraftPoints([]);
+    setCableCursor(null);
+  }, []);
+
+  // In Connect mode, a second latched marker auto-creates the connecting line
+  // and resets, ready for the next pair.
+  useEffect(() => {
+    if (connectMode && draftPoints.length >= 2) {
+      snapshotCables();
+      const newCable: Cable = { id: `cable-${Date.now()}`, type: 'connection', points: draftPoints.slice(0, 2) };
+      setCableList((prev) => {
+        const next = [...prev, newCable];
+        saveCables(next);
+        return next;
+      });
+      setDraftPoints([]);
+      setCableCursor(null);
+    }
+  }, [connectMode, draftPoints, snapshotCables]);
 
   // Edit-cables mode — a dedicated mode where only cables respond to clicks,
   // so markers/stickers/labels can't interfere with cable editing.
@@ -1234,6 +1339,25 @@ export function EnergyMap() {
   };
 
 
+  const handleSetAssetQuantity = useCallback((id: string, q: number) => {
+    const clamped = Math.max(1, Math.round(q));
+    const subMapId = projectedSubMapById.get(id);
+    if (subMapId) {
+      const key = `energy-submap-${subMapId}-assets`;
+      try {
+        const arr: EnergyAsset[] = JSON.parse(localStorage.getItem(key) || '[]');
+        localStorage.setItem(key, JSON.stringify(arr.map((a) => a.id === id ? { ...a, quantity: clamped } : a)));
+      } catch { /* ignore */ }
+      setProjectionVersion((v) => v + 1);
+      return;
+    }
+    setAssets((prev) => {
+      const next = prev.map((a) => (a.id === id ? { ...a, quantity: clamped } : a));
+      saveUserAssets(next.filter((a) => a.id.startsWith('user-mpan-')));
+      return next;
+    });
+  }, [projectedSubMapById]);
+
   const handleDeleteAsset = useCallback((id: string) => {
     // Projected sub-map asset — delete it from its own sub-map's storage, so
     // the deletion applies in both views (and bump the projection to refresh).
@@ -1290,7 +1414,7 @@ export function EnergyMap() {
   // Overview assets = the overview's own editable battery markers, plus the
   // read-only infrastructure projected in from every sub-map.
   const registeredAssets = [...assets.filter((a) => !deletedAssetIds.has(a.id)), ...projectedAssets];
-  const visibleAssets = registeredAssets.filter((a) => visibleTypes.has(a.type));
+  const visibleAssets = registeredAssets.filter((a) => visibleTypes.has(a.idno ? 'idno' : a.type));
 
   const zoomScale = (zoomedSite?.zoom ?? 1) * mapZoom;
   const zoomOriginX = zoomedSite?.x ?? 50;
@@ -1323,11 +1447,12 @@ export function EnergyMap() {
         <div className="h-5 w-px bg-gray-200 mx-1" />
         */}
         <div className="flex items-center gap-4 text-xs text-gray-500">
+          {/* Wind Scenario button removed for the Meter map (2026-07). Uncomment to restore.
           <button
             onClick={() => setWindModalOpen(true)}
             data-testid="btn-wind-scenario"
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-semibold border border-cyan-200 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 hover:border-cyan-300 transition-colors"
-            title="Open the Option A wind scenario — 8,760-hour modelled output with export hours"
+            title="Open the Option A wind scenario. 8,760-hour modelled output with export hours."
           >
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9.6 4.6A2 2 0 1 1 11 8H2" />
@@ -1336,6 +1461,7 @@ export function EnergyMap() {
             </svg>
             Wind Scenario
           </button>
+          */}
           <span data-testid="asset-count">
             <span className="font-semibold text-gray-800">{registeredAssets.length}</span> assets registered
           </span>
@@ -1369,6 +1495,16 @@ export function EnergyMap() {
             >
               <CableIcon size={13} />
               Add cable
+            </button>
+          )}
+          {!editMode && !addMpanMode && !addLabelMode && !labelEditMode && !cableMode && !cableEditMode && !stickerLib.stickerEditMode && !regionMode && !VIEW_ONLY && (
+            <button
+              data-testid="btn-connect"
+              onClick={handleEnterConnectMode}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border border-emerald-300 text-emerald-700 hover:bg-emerald-50 transition-colors"
+            >
+              <ArrowLeftRight size={13} />
+              Connect
             </button>
           )}
           {!editMode && !addMpanMode && !addLabelMode && !labelEditMode && !cableMode && !cableEditMode && !stickerLib.stickerEditMode && !regionMode && !VIEW_ONLY && (
@@ -1603,7 +1739,22 @@ export function EnergyMap() {
         </div>
       )}
 
-      {cableMode && (
+      {connectMode && (
+        <div className="bg-emerald-600 text-white px-6 py-2.5 flex items-center gap-3 text-xs font-medium">
+          <span className="w-2 h-2 rounded-full bg-white animate-pulse shrink-0" />
+          <span>Connect: click one marker, then another, to link them{draftPoints.length === 1 ? ' — now click the second marker' : ''}. Keeps going for the next pair.</span>
+          <div className="ml-auto flex items-center gap-3 shrink-0">
+            <button
+              data-testid="btn-done-connect"
+              onClick={handleExitConnectMode}
+              className="px-3 py-1 rounded bg-white text-emerald-700 font-semibold hover:bg-emerald-50 transition-colors"
+            >
+              Done connecting
+            </button>
+          </div>
+        </div>
+      )}
+      {cableMode && !connectMode && (
         <div className="bg-amber-600 text-white px-6 py-2.5 flex items-center gap-3 text-xs font-medium">
           <span className="w-2 h-2 rounded-full bg-white animate-pulse shrink-0" />
           <span className="hidden md:inline">Click to lay cable points · click a marker to plug in · 3+ points curve</span>
@@ -1647,7 +1798,7 @@ export function EnergyMap() {
       {cableEditMode && (
         <div className="bg-amber-600 text-white px-6 py-2.5 flex items-center gap-3 text-xs font-medium">
           <span className="w-2 h-2 rounded-full bg-white animate-pulse shrink-0" />
-          <span>Edit cables — click a cable to select it <span className="font-bold">then pick a colour</span> · drag points to move · <span className="font-bold">click a point</span> to delete / detach it · <span className="font-bold">click a segment</span> to delete it · <span className="font-bold">+</span> adds a point</span>
+          <span>Edit cables. Click a cable to select it <span className="font-bold">then pick a colour</span> · drag points to move · <span className="font-bold">click a point</span> to delete / detach it · <span className="font-bold">click a segment</span> to delete it · <span className="font-bold">+</span> adds a point</span>
           <button
             onClick={handleExitCableEditMode}
             className="ml-auto text-amber-100 hover:text-white underline shrink-0"
@@ -1670,18 +1821,13 @@ export function EnergyMap() {
         </div>
       )}
 
-      {/* Everything below the header scrolls as one column, so the data
-          tables under the map are always reachable. */}
-      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
+      {/* The middle strip (below header, above data-panel toolbar) is a
+          strict flex container: the map takes ALL available space here and
+          the map's 16:9 aspect ratio does the rest. No scroll here. When
+          the data panel is opened, its own body scrolls internally. */}
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
       <main
-        className="flex items-center justify-center overflow-hidden shrink-0"
-        // Guarantee vertical space for the map: 100dvh minus (header ~90 px +
-        // data-panel-toolbar ~40 px + breathing room ~30 px = 160 px). This
-        // is a MIN-height, not a max — the map fits inside this box with
-        // letterbox bars on the sides when the viewport is wider than 16:9.
-        // Below the map, the wrapping div is overflow-y-auto so the data
-        // panel expands into scrollable space rather than clipping.
-        style={{ minHeight: 'calc(100dvh - 160px)' }}
+        className="flex-1 min-h-0 flex items-center justify-center overflow-hidden"
       >
         <div
           data-testid="map-container"
@@ -1756,7 +1902,15 @@ export function EnergyMap() {
                   framed={sticker.framed}
                   objectPosition={sticker.objectPosition}
                   editMode={stickerLib.stickerEditMode}
-                  onOpenInfo={() => stickerLib.setInfoItem(stickerToPanelItem(sticker))}
+                  // Click a circle photo asset on the overview → navigate
+                  // straight into its sub-map. Falls back to the old info-panel
+                  // open only if the sticker isn't tied to a known sub-map.
+                  onOpenInfo={() => handleStickerCircleClick(
+                    sticker.label,
+                    { x: transform.x, y: transform.y },
+                    transform,
+                    () => stickerLib.setInfoItem(stickerToPanelItem(sticker)),
+                  )}
                   selected={selectedStickerId === sticker.id}
                   onSelect={() => handleStickerSelect(sticker.id)}
                   onUpdate={(updates) => handleStickerUpdate(sticker.id, updates)}
@@ -1781,7 +1935,12 @@ export function EnergyMap() {
                 framed={sticker.framed}
                 objectPosition={sticker.objectPosition}
                 editMode={stickerLib.stickerEditMode}
-                onOpenInfo={() => stickerLib.setInfoItem(stickerToPanelItem(sticker))}
+                onOpenInfo={() => handleStickerCircleClick(
+                  sticker.label,
+                  { x: placement.x, y: placement.y },
+                  placement,
+                  () => stickerLib.setInfoItem(stickerToPanelItem(sticker)),
+                )}
                 selected={stickerLib.selectedId === sticker.id}
                 onSelect={() => {
                   stickerLib.setSelectedId(sticker.id);
@@ -1971,6 +2130,8 @@ export function EnergyMap() {
               const isDragging = draggingRef.current?.id === asset.id || dragPos != null;
               const meta = assetTypeConfig[asset.type];
               const TypeIcon = meta.Icon;
+              // IDNO markers keep their real icon but take the IDNO colour.
+              const markerColor = asset.idno ? assetTypeConfig['idno'].color : meta.color;
               // Building markers render a little larger so they stand out. On
               // Wind turbines render as a refined white turbine silhouette
               // with a restrained shadow stack (no circular pill, no neon
@@ -2002,10 +2163,28 @@ export function EnergyMap() {
                     userSelect: 'none',
                     pointerEvents: (cableEditMode || regionMode) ? 'none' : undefined,
                   }}
-                  onMouseEnter={() => { if (!editMode && !cableMode) setHoveredId(asset.id); }}
-                  onMouseLeave={() => setHoveredId(null)}
+                  onMouseEnter={() => { if (!editMode && !cableMode) openHover(asset.id); }}
+                  onMouseLeave={scheduleHoverClose}
                   onMouseDown={(e) => { if (isProjected) handleProjectedMouseDown(e, asset); else handleMarkerMouseDown(e, asset.id); }}
-                  onClick={() => { if (!editMode && !cableMode) handleOpen(asset); }}
+                  onClick={() => {
+                    if (editMode || cableMode) return;
+                    // Projected sub-map assets on the overview jump into their
+                    // owning sub-map instead of opening a panel here — every
+                    // "campus asset" click on the overview should drill in.
+                    if (isProjected) {
+                      const subMapId = projectedSubMapById.get(asset.id);
+                      if (subMapId) {
+                        setSelectedAsset(null);
+                        setSelectedStickerId(null);
+                        setHoveredId(null);
+                        stickerLib.setInfoItem(null);
+                        setSubMapOrigin({ x: markerX, y: markerY });
+                        setActiveSubMapId(subMapId);
+                        return;
+                      }
+                    }
+                    handleOpen(asset);
+                  }}
                 >
                   <button
                     className="relative flex items-center justify-center focus:outline-none"
@@ -2019,8 +2198,8 @@ export function EnergyMap() {
                         style={{
                           width: markerSize,
                           height: markerSize,
-                          color: meta.color,
-                          background: meta.color,
+                          color: markerColor,
+                          background: markerColor,
                           border: `2px solid ${editMode ? '#fbbf24' : 'white'}`,
                           boxShadow: editMode
                             ? '0 0 0 3px rgba(251,191,36,0.4), 0 2px 8px rgba(0,0,0,0.4)'
@@ -2063,7 +2242,7 @@ export function EnergyMap() {
                   )}
 
                   {!editMode && isHovered && (
-                    <MarkerTooltip asset={asset} onViewData={() => handleOpen(asset)} onDelete={() => handleDeleteAsset(asset.id)} flipDown={markerY < 25} />
+                    <MarkerTooltip asset={asset} onViewData={() => handleOpen(asset)} onDelete={() => handleDeleteAsset(asset.id)} onSetQuantity={(q) => handleSetAssetQuantity(asset.id, q)} flipDown={markerY < 25} />
                   )}
                 </div>
               );
@@ -2094,7 +2273,13 @@ export function EnergyMap() {
           </div>
 
           {/* Controls sit outside the zoom layer so they don't scale */}
-          {!editMode && !legendHidden && <Legend stickersByView={stickerLib.stickersByView} />}
+          {!editMode && !legendHidden && (
+            <Legend
+              stickersByView={stickerLib.stickersByView}
+              onOpenChart={() => setChartOpen(true)}
+              onOpenData={() => setDataPanelOpen(true)}
+            />
+          )}
           {!editMode && !filterHidden && <FilterPanel visible={visibleTypes} onChange={handleFilterChange} />}
 
           {/* Zoom controls */}
@@ -2130,24 +2315,14 @@ export function EnergyMap() {
             </button>
           </div>
 
-          {/* Bottom-left controls: undo + sticker/label visibility toggles */}
+          {/* Bottom-left controls: undo + sticker/label visibility toggles.
+              The "View as chart" button used to live here; it moved into the
+              Legend as its footer so it sits directly under the Assets panel. */}
           {!editMode && (
             <div
               className="absolute bottom-3 left-3 z-20 flex flex-col items-start gap-2"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Chart shortcut — sits on top of the visibility toggles, with a
-                  gentle green glow so it reads as the primary action here. */}
-              <button
-                type="button"
-                data-testid="btn-open-chart"
-                onClick={() => setChartOpen(true)}
-                className="btn-chart-glow flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500 text-white text-xs font-bold shadow-lg hover:bg-emerald-400 active:scale-95 transition-all"
-                title="View the consumption vs generation breakdown as a stacked bar chart."
-              >
-                <BarChart3 size={13} className="shrink-0" />
-                View as chart ↗
-              </button>
               {cableHistory.length > 0 && (
                 <button
                   data-testid="btn-undo-cable"

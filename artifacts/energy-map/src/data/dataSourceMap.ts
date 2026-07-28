@@ -176,16 +176,19 @@ const sources: Record<string, DataSourceEntry> = {
     consumption: { url: 'data/Consumption_MCWFC_Building.csv', label: 'MPAN 11 → MCWFC consumption (hourly modelled)' },
   },
 
-  // ── CFA — generation-only assets ─────────────────────────────────────
-  'FM Building': { generation: { url: 'data/Generation_FM_Building.csv', label: 'FM Building solar generation (HH)' } },
-  'FM Building Solar Array': { generation: { url: 'data/Generation_FM_Building.csv', label: 'FM Building solar generation (HH)' } },
-  'TV Studio': { generation: { url: 'data/Generation_TV_Studio.csv', label: 'TV Studio solar generation (HH)' } },
-  'TV Studio Solar Array': { generation: { url: 'data/Generation_TV_Studio.csv', label: 'TV Studio solar generation (HH)' } },
-  'Joie Stadium': { generation: { url: 'data/Generation_Joie_Stadium.csv', label: 'Joie Stadium solar generation (HH)' } },
-  'Joie Stadium Solar Array': { generation: { url: 'data/Generation_Joie_Stadium.csv', label: 'Joie Stadium solar generation (HH)' } },
-  'Indoor Pitch': { generation: { url: 'data/Generation_Performance_Centre.csv', label: 'Indoor Pitch / Performance Centre solar generation (HH)' } },
-  'Indoor Pitch Solar Array': { generation: { url: 'data/Generation_Performance_Centre.csv', label: 'Indoor Pitch solar generation (HH)' } },
-  'Performance Centre': { generation: { url: 'data/Generation_Performance_Centre.csv', label: 'Performance Centre solar generation (HH)' } },
+  // ── CFA — Phase 1 generation-only assets ─────────────────────────────
+  // All four Phase 1 sites now point at the single combined hourly workbook
+  // (plant_generation_sorted_cleaned) — one file with every string/meter
+  // column, Jul 2025 to Jun 2026 — rather than the old per-site CSVs.
+  'FM Building': { generation: { url: 'data/Generation_Phase1_All_Sites_HH.xlsx', label: 'Phase 1 combined generation — all sites, per string/meter (hourly)' } },
+  'FM Building Solar Array': { generation: { url: 'data/Generation_Phase1_All_Sites_HH.xlsx', label: 'Phase 1 combined generation — all sites, per string/meter (hourly)' } },
+  'TV Studio': { generation: { url: 'data/Generation_Phase1_All_Sites_HH.xlsx', label: 'Phase 1 combined generation — all sites, per string/meter (hourly)' } },
+  'TV Studio Solar Array': { generation: { url: 'data/Generation_Phase1_All_Sites_HH.xlsx', label: 'Phase 1 combined generation — all sites, per string/meter (hourly)' } },
+  'Joie Stadium': { generation: { url: 'data/Generation_Phase1_All_Sites_HH.xlsx', label: 'Phase 1 combined generation — all sites, per string/meter (hourly)' } },
+  'Joie Stadium Solar Array': { generation: { url: 'data/Generation_Phase1_All_Sites_HH.xlsx', label: 'Phase 1 combined generation — all sites, per string/meter (hourly)' } },
+  'Indoor Pitch': { generation: { url: 'data/Generation_Phase1_All_Sites_HH.xlsx', label: 'Phase 1 combined generation — all sites, per string/meter (hourly)' } },
+  'Indoor Pitch Solar Array': { generation: { url: 'data/Generation_Phase1_All_Sites_HH.xlsx', label: 'Phase 1 combined generation — all sites, per string/meter (hourly)' } },
+  'Performance Centre': { generation: { url: 'data/Generation_Phase1_All_Sites_HH.xlsx', label: 'Phase 1 combined generation — all sites, per string/meter (hourly)' } },
   'Ground Mount Array': { generation: { url: 'data/Generation_Phase2A_Ground_Mount.csv', label: 'Phase 2A Ground Mount generation (hourly modelled)' } },
   'Ground Mount 2A': { generation: { url: 'data/Generation_Phase2A_Ground_Mount.csv', label: 'Phase 2A Ground Mount generation (hourly modelled)' } },
   'Phase 2A Ground Mount': { generation: { url: 'data/Generation_Phase2A_Ground_Mount.csv', label: 'Phase 2A Ground Mount generation (hourly modelled)' } },

@@ -241,7 +241,7 @@ export function HHDataModal({ url, title, subtitle, onClose }: HHDataModalProps)
                 <AlertTriangle size={28} className="text-amber-500 mx-auto mb-2" />
                 <p className="text-sm font-semibold text-gray-800 mb-1">Couldn&apos;t load the data file</p>
                 <p className="text-xs text-gray-500 mb-3">{error}</p>
-                <p className="text-[11px] text-gray-400">The download button still works — the file may need to be fetched directly.</p>
+                <p className="text-[11px] text-gray-400">The download button still works. The file may need to be fetched directly.</p>
               </div>
             </div>
           )}

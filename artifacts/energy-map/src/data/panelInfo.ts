@@ -16,6 +16,10 @@ export interface PanelInfo {
   // a back layer (so a big background sticker sits beneath the others).
   hideLabel?: boolean;
   backLayer?: boolean;
+  // Build status — whether this asset (solar array, meter, inverter, etc.) is
+  // already built/existing or still proposed/planned. Shown on the hover
+  // tooltip and the click panel. Undefined is treated as 'built'.
+  status?: 'built' | 'proposed';
 }
 
 const PANEL_INFO_KEY = 'energy-map-asset-panel-info';
@@ -36,7 +40,7 @@ export function panelInfoFor(id: string): PanelInfo {
 
 export function savePanelInfo(id: string, info: PanelInfo): void {
   const all = loadAllPanelInfo();
-  if (info.title || info.subtitle || info.narrative || info.image || info.hideLabel || info.backLayer) all[id] = info;
+  if (info.title || info.subtitle || info.narrative || info.image || info.hideLabel || info.backLayer || info.status) all[id] = info;
   else delete all[id];
   try {
     localStorage.setItem(PANEL_INFO_KEY, JSON.stringify(all));

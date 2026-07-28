@@ -92,28 +92,45 @@ export const energyData: Record<string, BuildingEnergy> = {
   'mcwfc-solar': {
     generation: { dataType: 'Modelled', values: [1030, 2249, 3724, 5945, 7525, 7181, 7091, 5812, 4319, 2690, 1335, 832] },
   },
-  // Phase 1 actuals — truncated to a clean 12-month window (Jan to Dec 2025)
-  // so all generation panels show comparable annual totals against the
-  // 12-month modelled series (Hotel, Commercial, Etihad Towers, etc.).
-  // The 4 trailing months of meter data (Jan to Apr 2026) are intentionally
-  // not displayed; if a longer-window view is needed later, restore from git.
-  // Phase 1 solar — annuals aligned to the Wind Feasibility Study (June 2026):
-  // FM Building 81 MWh, Performance Centre (Indoor Pitch) 587 MWh, Joie Stadium
-  // 804 MWh, TV Studio 16 MWh. Monthly shape preserved, rescaled to the report.
+  // Phase 1 solar — ACTUAL metered generation, Jul 2025 to Jun 2026 (12 months),
+  // from the "as recorded" plant export (plant_generation_sorted_cleaned).
+  // Annual totals: Joie Stadium 769,313 kWh (14 strings summed), Indoor Pitch /
+  // Performance Centre 542,423 kWh (6 meters summed), FM Building 80,977 kWh,
+  // TV Studio 16,008 kWh. Phase 1 total 1,408,721 kWh. All four use
+  // startIndex = 6 (values[0] = July 2025) and reconcile to the per-inverter
+  // breakdown in inverterGenData.ts.
   'fm-building': {
-    generation: { dataType: 'Actual', values: [1, 0, 6314, 7093, 9354, 15617, 14335, 12454, 8529, 3815, 2157, 1331] },
+    generation: {
+      dataType: 'Actual',
+      startIndex: 6,
+      values: [13604, 11819, 8094, 3621, 2047, 1263, 1490, 2274, 5239, 8404, 11336, 11786],
+    },
   },
   'indoor-pitch': {
-    generation: { dataType: 'Actual', values: [5693, 14129, 433, 11429, 96098, 121989, 112643, 99280, 67016, 31474, 16757, 10059] },
+    generation: {
+      dataType: 'Actual',
+      startIndex: 6,
+      values: [95001, 83731, 56519, 26545, 14133, 8484, 10040, 16629, 37263, 56585, 60353, 77140],
+    },
   },
   'joie-stadium': {
-    generation: { dataType: 'Actual', values: [8649, 15593, 164786, -6869, 87961, 143318, 132620, 116315, 78516, 35544, 18451, 9116] },
+    generation: {
+      dataType: 'Actual',
+      startIndex: 6,
+      values: [139220, 122104, 82423, 37313, 19369, 9622, 12207, 20378, 47921, 75228, 100879, 102649],
+    },
   },
   'ground-mount-2a': {
     generation: { dataType: 'Modelled', values: [8367, 16448, 22533, 33314, 39390, 36281, 36268, 30974, 25419, 17910, 10368, 7356] },
   },
+  // TV Studio — ACTUAL metered generation, Jul 2025 to Jun 2026 (12 months).
+  // Total: 16,008 kWh / 16.0 MWh. startIndex = 6 → values[0] is July 2025.
   'tv-studio': {
-    generation: { dataType: 'Actual', values: [54, 135, 298, 1095, 2493, 3169, 2921, 2592, 1775, 787, 436, 245] },
+    generation: {
+      dataType: 'Actual',
+      startIndex: 6,
+      values: [2480, 2201, 1507, 668, 370, 208, 173, 419, 1199, 2314, 2422, 2047],
+    },
   },
 
   // Proposed CFA wind turbine — modelled generation from the wind-model

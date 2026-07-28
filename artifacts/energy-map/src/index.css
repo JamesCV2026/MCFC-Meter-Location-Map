@@ -130,6 +130,21 @@
   animation: marker-pulse 2s ease-out infinite;
 }
 
+/* Smooth appearance for marker hover tooltips — a quick fade + slight rise so
+   they don't pop in abruptly. The end state matches the inline translateX(-50%)
+   centring, so there's no jump when the animation finishes. */
+@keyframes tooltip-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(4px) scale(0.97); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0)   scale(1); }
+}
+.tooltip-in {
+  animation: tooltip-in 0.15s ease-out;
+  transform-origin: center bottom;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tooltip-in { animation: none; }
+}
+
 /* Spinning rotor for wind-turbine markers — only the blade group (.wt-blades)
    turns, so the tower stays put. Driven by the .wind-spin class on the icon. */
 @keyframes wind-spin {

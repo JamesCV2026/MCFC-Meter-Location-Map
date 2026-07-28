@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useState } from 'react';
 import { ChevronUp, ChevronDown, Zap, Sun, Wrench, Download } from 'lucide-react';
 import { HHDataModal } from './HHDataModal';
 
@@ -65,10 +65,12 @@ const DATA = {
   genCoopLive: 'data/Generation_Coop_Live_Solar_Model.csv',
   genNorthStandCommercial: 'data/Generation_Etihad_North_Stand_Commercial.csv',
   genNorthStandHotel: 'data/Generation_Etihad_North_Stand_Hotel.csv',
-  genFmBuilding: 'data/Generation_FM_Building.csv',
-  genTvStudio: 'data/Generation_TV_Studio.csv',
-  genJoieStadium: 'data/Generation_Joie_Stadium.csv',
-  genPerformanceCentre: 'data/Generation_Performance_Centre.csv',
+  // Phase 1 sites now share the single combined hourly workbook (per string /
+  // meter, Jul 2025 to Jun 2026) rather than the old per-site CSVs.
+  genFmBuilding: 'data/Generation_Phase1_All_Sites_HH.xlsx',
+  genTvStudio: 'data/Generation_Phase1_All_Sites_HH.xlsx',
+  genJoieStadium: 'data/Generation_Phase1_All_Sites_HH.xlsx',
+  genPerformanceCentre: 'data/Generation_Phase1_All_Sites_HH.xlsx',
   genMcwfc: 'data/Generation_MCWFC.csv',
   genGroundMount2A: 'data/Generation_Phase2A_Ground_Mount.csv',
   genGroundMount2B: 'data/Generation_Phase2B_Ground_Mount.csv',
@@ -132,19 +134,22 @@ export const generationData: EnergyRow[] = [
   { group: 'etihad', site: 'Co-op Live Arena', dataType: 'Modelled', kwh: 1250000, sourceUrl: DATA.genCoopLive },
   { group: 'etihad', site: 'Etihad North Stand Commercial', dataType: 'Modelled', kwh: 72595, sourceUrl: DATA.genNorthStandCommercial },
   { group: 'etihad', site: 'Etihad North Stand Hotel', dataType: 'Modelled', kwh: 86331, sourceUrl: DATA.genNorthStandHotel },
-  // Etihad Towers — modelled generation (was previously wired as consumption
-  // by mistake; the CSV's own header column is "Generation (kWh)").
-  { group: 'etihad', site: 'Etihad Towers', dataType: 'Modelled', kwh: 119890, sourceUrl: DATA.etihadTowers },
-  // Phase 1 actuals — all four rows are 12-month totals (Jan to Dec 2025) to
-  // sit apples-to-apples alongside the 12-month modelled generation series.
-  { group: 'cfa', site: 'FM Building', dataType: 'Actual', kwh: 81000, sourceUrl: DATA.genFmBuilding },
-  { group: 'cfa', site: 'TV Studio', dataType: 'Actual', kwh: 16000, sourceUrl: DATA.genTvStudio },
-  { group: 'cfa', site: 'Joie Stadium', dataType: 'Actual', kwh: 804000, sourceUrl: DATA.genJoieStadium },
-  { group: 'cfa', site: 'Performance Centre', dataType: 'Actual', kwh: 587000, sourceUrl: DATA.genPerformanceCentre },
+  // Etihad Towers — modelled generation. The source CSV's own header column is
+  // "Generation (kWh)" (hour-of-year format, 119,890 kWh/yr), so it IS the
+  // generation file — wired as the download here.
+  { group: 'etihad', site: 'Etihad Towers', dataType: 'Modelled', kwh: 119890, sourceUrl: 'data/Etihad Towers Consumption Actual.csv' },
+  // Phase 1 actuals — 12-month metered totals (Jul 2025 to Jun 2026) from the
+  // combined plant export, apples-to-apples with the 12-month modelled series.
+  // Subtotal 1,408,721 kWh (Joie 769,313 + Perf Centre 542,423 + FM 80,977 +
+  // TV 16,008).
+  { group: 'cfa', site: 'FM Building', dataType: 'Actual', kwh: 80977, sourceUrl: DATA.genFmBuilding },
+  { group: 'cfa', site: 'TV Studio', dataType: 'Actual', kwh: 16008, sourceUrl: DATA.genTvStudio },
+  { group: 'cfa', site: 'Joie Stadium', dataType: 'Actual', kwh: 769313, sourceUrl: DATA.genJoieStadium },
+  { group: 'cfa', site: 'Performance Centre', dataType: 'Actual', kwh: 542423, sourceUrl: DATA.genPerformanceCentre },
   { group: 'cfa', site: 'MCWFC Building', dataType: 'Modelled', kwh: 49733, sourceUrl: DATA.genMcwfc },
   { group: 'cfa', site: 'Phase 2A Ground Mount', dataType: 'Modelled', kwh: 284628, sourceUrl: DATA.genGroundMount2A },
   // Proposed CFA wind turbine — one 6.2 MW machine (candidate locations 1-3).
-  { group: 'cfa', site: 'Wind Turbine — 6.2 MW', dataType: 'Modelled', kwh: 12328307 },
+  { group: 'cfa', site: 'Wind Turbine (6.2 MW)', dataType: 'Modelled', kwh: 12328307 },
   // Phase 2B Ground Mount removed from the bottom Data Panel to mirror the
   // map, which only shows the Phase 2A ground-mount marker. The 2B CSV
   // remains bundled in /data/ for completeness but is no longer surfaced
@@ -180,7 +185,7 @@ function DataRow({ row, onOpen }: { row: EnergyRow; onOpen: (row: EnergyRow) => 
   return (
     <tr
       style={{ background: row.alt ? '#fafafa' : 'white' }}
-      title={row.alt ? 'Comparison only — not included in the subtotals or grand total' : undefined}
+      title={row.alt ? 'Comparison only, not included in the subtotals or grand total' : undefined}
     >
       <td className={`px-3 py-1.5${row.alt ? ' italic text-gray-400' : ''}`}>{siteCell}</td>
       <td className="px-3 py-1.5">
@@ -368,10 +373,10 @@ const equipmentRegister = [
   { ref: 'Diesel Generator 3', site: 'City Football Academy', make: 'FG Wilson', engine: 'Perkins 1106C-E66TAG4', alternator: 'Leroy Somer LL5014D', rating: '200 kVA' },
   { ref: 'Diesel Generator 4', site: 'City Football Academy', make: 'FG Wilson', engine: 'Perkins 1106C-E66TAG4', alternator: 'Leroy Somer LL5014D', rating: '200 kVA' },
   // Etihad Stadium diesel generators — numbered 5 and 6.
-  { ref: 'Diesel Generator 5', site: 'Etihad Stadium', make: 'Cummins', engine: '—', alternator: '—', rating: '750 kVA' },
+  { ref: 'Diesel Generator 5', site: 'Etihad Stadium', make: 'Cummins', engine: 'n/a', alternator: 'n/a', rating: '750 kVA' },
   { ref: 'Diesel Generator 6', site: 'Etihad Stadium', make: 'Cummins', engine: 'Cummins VTA-28-GS', alternator: 'Stamford HC1534F1', rating: '706 kVA' },
-  { ref: 'CHP 1', site: 'City Football Academy', make: '—', engine: '—', alternator: '—', rating: '310 kWe / 2,500 kWth' },
-  { ref: 'CHP 2', site: 'City Football Academy', make: '—', engine: '—', alternator: '—', rating: '310 kWe / 2,500 kWth' },
+  { ref: 'CHP 1', site: 'City Football Academy', make: 'n/a', engine: 'n/a', alternator: 'n/a', rating: '310 kWe / 2,500 kWth' },
+  { ref: 'CHP 2', site: 'City Football Academy', make: 'n/a', engine: 'n/a', alternator: 'n/a', rating: '310 kWe / 2,500 kWth' },
 ];
 
 // Gas metering & billing summary — supplied by James, four GAS meter accounts
@@ -403,14 +408,14 @@ function InfrastructureSection() {
         <p className="text-xs text-gray-700 leading-relaxed">
           The campus is supplied via a <span className="font-semibold">6.6 kV high-voltage network</span>,
           stepped down through on-site transformers to serve each building. Standby generation is
-          provided by diesel generating sets &mdash; <span className="font-semibold">FG Wilson</span> at the
+          provided by diesel generating sets: <span className="font-semibold">FG Wilson</span> at the
           City Football Academy and <span className="font-semibold">Cummins</span> at the Etihad
           Stadium. Two <span className="font-semibold">CHP units</span> are
-          also installed &mdash; each rated <span className="font-semibold">310 kWe / 2,500 kWth</span>, together providing
+          also installed, each rated <span className="font-semibold">310 kWe / 2,500 kWth</span>, together providing
           roughly <span className="font-semibold">620 kWe electrical</span> and <span className="font-semibold">5 MW thermal</span>.
         </p>
         <p className="text-[11px] text-gray-400 mt-1">
-          Draft — transformer capacity, HV cabling spec and the full equipment figures to be confirmed.
+          Draft: transformer capacity, HV cabling spec and the full equipment figures to be confirmed.
         </p>
 
         <table className="w-full text-xs border-collapse mt-3">
@@ -437,7 +442,7 @@ function InfrastructureSection() {
           </tbody>
         </table>
         <p className="text-[11px] text-gray-400 mt-1.5">
-          Sample equipment register — 4 diesel generators and 2 CHP units. Transformers and HV cabling to follow.
+          Sample equipment register: 4 diesel generators and 2 CHP units. Transformers and HV cabling to follow.
         </p>
 
         {/* Gas metering & billing summary — 4 GAS meter accounts. The gas
@@ -525,76 +530,46 @@ export function DataPanel({ open, onToggle }: DataPanelProps) {
   // Currently-opened row drives the HH data viewer modal. Null when closed.
   const [openRow, setOpenRow] = useState<EnergyRow | null>(null);
 
-  // Data catalogue modal — opens in an iframe overlay, so it works on
-  // dev / hosted / standalone file:// identically. Source: the inline
-  // catalogue HTML if present (window.__MCFC_CATALOG_HTML__, populated by
-  // the standalone build) or the sibling file otherwise.
-  const [catalogOpen, setCatalogOpen] = useState(false);
-  const catalogBlobUrl = useMemo(() => {
-    if (!catalogOpen) return null;
-    if (typeof window === 'undefined') return null;
-    const inlined = (window as unknown as { __MCFC_CATALOG_HTML__?: string }).__MCFC_CATALOG_HTML__;
-    if (inlined && inlined.length > 0) {
-      const blob = new Blob([inlined], { type: 'text/html;charset=utf-8' });
-      return URL.createObjectURL(blob);
-    }
-    // No inline catalogue — fall back to the sibling file (works on dev /
-    // hosted builds where the file is reachable).
-    return 'data-catalog.html';
-  }, [catalogOpen]);
-  useEffect(() => {
-    return () => {
-      // Revoke the blob URL when the modal closes / DataPanel unmounts.
-      if (catalogBlobUrl && catalogBlobUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(catalogBlobUrl);
-      }
-    };
-  }, [catalogBlobUrl]);
-  useEffect(() => {
-    if (!catalogOpen) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setCatalogOpen(false); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [catalogOpen]);
+  // Data catalogue trigger was removed from the toolbar — the raw catalogue
+  // still lives at /data-catalog.html for anyone deep-linking to it.
   const subtitle = openRow
     ? `${openRow.group === 'etihad' ? 'Etihad Stadium Campus' : 'City Football Academy'} · ${openRow.dataType} · ${fmt(openRow.kwh)} kWh total`
     : '';
   return (
     <div className="shrink-0 border-t border-gray-200 bg-white shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
+      {/* Collapsed state: bold emerald bar with a clear "click to open" cue so
+          it reads as an active drawer, not a static footer. Expanded state:
+          quieter grey so it recedes behind the data. */}
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-6 py-2.5 hover:bg-gray-50 transition-colors group"
+        className={
+          open
+            ? 'w-full flex items-center justify-between px-6 py-2.5 bg-gray-100 hover:bg-gray-200 transition-colors group'
+            : 'w-full flex items-center justify-between px-6 py-3.5 bg-emerald-500 hover:bg-emerald-400 transition-colors group animate-pulse-once'
+        }
         aria-label={open ? 'Collapse data panel' : 'Expand data panel'}
       >
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-gray-700 tracking-wide uppercase">
+        <div className="flex items-center gap-3">
+          <span className={open ? 'text-xs font-bold text-gray-700 tracking-wide uppercase' : 'text-sm font-extrabold text-white tracking-wide uppercase'}>
             Energy Data
           </span>
-          <span className="text-[10px] text-gray-400 font-normal">
-            Consumption &amp; Generation summary — click any site to view its half-hourly data
+          <span className={open ? 'text-[10px] text-gray-400 font-normal' : 'text-[11px] text-white/90 font-semibold'}>
+            {open
+              ? 'Consumption & Generation summary. Click any site to view its half-hourly data.'
+              : 'Click to open Consumption & Generation summary'}
           </span>
-          {/* Static AI-readable catalogue — opens in an iframe modal over
-              the map. Previously this was a window.open() into a new tab,
-              but the Blob URL flow gets quietly blocked by modern browsers
-              on file:// origins (where window.open of a blob is treated as
-              a popup). The in-page modal works identically across dev,
-              hosted, and standalone file:// builds. */}
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); setCatalogOpen(true); }}
-            className="ml-2 text-[10px] font-semibold text-indigo-700 hover:text-indigo-900 hover:underline"
-            title="Open the full data catalogue (static HTML, AI-readable)."
-          >
-            Open data catalogue ↗
-          </button>
         </div>
-        <div className="flex items-center gap-1 text-gray-400 group-hover:text-gray-600 transition-colors">
-          {open ? <ChevronDown size={15} /> : <ChevronUp size={15} />}
+        <div className={open ? 'flex items-center gap-1 text-gray-600' : 'flex items-center gap-2 text-white font-bold text-xs uppercase tracking-wide'}>
+          {!open && <span className="hidden sm:inline">Open</span>}
+          {open ? <ChevronDown size={22} strokeWidth={2.5} /> : <ChevronUp size={26} strokeWidth={3} className="animate-bounce" />}
         </div>
       </button>
 
       {open && (
-        <div className="px-6 pb-5 pt-1">
+        // Expanded body scrolls internally so the outer layout can keep the
+        // map locked to the visible viewport. Cap the panel at 70 vh so the
+        // map above still shows at least ~30 % of the viewport when open.
+        <div className="px-6 pb-5 pt-1 overflow-y-auto" style={{ maxHeight: '70vh' }}>
           <div className="flex gap-4">
             <EnergyTable
               title="Total Grid Consumption"
@@ -624,42 +599,6 @@ export function DataPanel({ open, onToggle }: DataPanelProps) {
         />
       )}
 
-      {/* Data catalogue modal — iframe overlay. Source URL is either the
-          inline blob (standalone build) or the sibling file (dev/hosted). */}
-      {catalogOpen && catalogBlobUrl && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-          onClick={() => setCatalogOpen(false)}
-          data-testid="data-catalog-modal"
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl flex flex-col w-full max-w-5xl max-h-[92vh] overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 shrink-0">
-              <div>
-                <h2 className="text-base font-bold text-gray-900">Data Catalogue</h2>
-                <p className="text-[11px] text-gray-500 mt-0.5">
-                  Every consumption + generation series the map carries, with monthly figures and source pointers. AI-readable.
-                </p>
-              </div>
-              <button
-                onClick={() => setCatalogOpen(false)}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-                aria-label="Close data catalogue"
-                data-testid="data-catalog-close"
-              >
-                <span className="text-lg leading-none">&times;</span>
-              </button>
-            </div>
-            <iframe
-              src={catalogBlobUrl}
-              title="Data catalogue"
-              className="flex-1 w-full border-0 bg-white"
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -23,7 +23,7 @@ const CONS_GROUPS: GroupDef[] = [
 ];
 
 const GEN_GROUPS: GroupDef[] = [
-  { name: 'Wind Turbine', color: '#15803d', match: ['Wind Turbine — 6.2 MW'] },
+  { name: 'Wind Turbine', color: '#15803d', match: ['Wind Turbine (6.2 MW)'] },
   // Solar phases — tagged "- Solar" and forced to a side leader label (never an
   // in-box label) so they read as solar, distinct from the wind block.
   { name: 'Phase 1 - Solar', color: '#22c55e', match: ['Joie Stadium', 'FM Building', 'TV Studio', 'Performance Centre'], leader: true },
@@ -131,7 +131,7 @@ export function EnergyBarChartModal({ open, onClose, consumption, generation }: 
       >
         <div className="flex items-start justify-between px-6 py-4 border-b border-gray-100">
           <div>
-            <h2 className="text-base font-bold text-gray-900">Campus Energy Balance — Consumption vs Green Generation</h2>
+            <h2 className="text-base font-bold text-gray-900">Campus Energy Balance: Consumption vs Green Generation</h2>
             <p className="text-[11px] text-gray-400 mt-0.5">Annual GWh, grouped per the feasibility study · single shared scale</p>
           </div>
           <button
@@ -247,7 +247,7 @@ export function EnergyBarChartModal({ open, onClose, consumption, generation }: 
             and out of the way. */}
         <div className="px-6 pb-3">
           <p className="text-[10px] leading-snug text-gray-400">
-            <span className="font-semibold text-gray-500">Solar phases</span> —
+            <span className="font-semibold text-gray-500">Solar phases.</span>
             {' '}Phase 1: Joie Stadium, Performance Centre, FM Building, TV Studio ·
             {' '}Phase 2: MCWFC, Ground Mount 2A ·
             {' '}Phase 3: NS Commercial, NS Hotel, Etihad Towers
@@ -258,7 +258,7 @@ export function EnergyBarChartModal({ open, onClose, consumption, generation }: 
           <div className="rounded-lg bg-gray-50 border border-gray-200 px-4 py-2.5 text-[12px] text-gray-600">
             With the proposed wind turbine, on-site generation could meet up to{' '}
             <span className="font-bold text-green-700">{coverage.toFixed(0)}%</span> of
-            grid consumption — <span className="font-semibold">{fmtGWh(genTotal)}</span> of{' '}
+            grid consumption: <span className="font-semibold">{fmtGWh(genTotal)}</span> of{' '}
             <span className="font-semibold">{fmtGWh(consTotal)}</span>.
           </div>
         </div>

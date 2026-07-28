@@ -30,10 +30,10 @@ function DataTypePill({ type }: { type: 'Actual' | 'Modelled' }) {
 }
 
 function cell(series: EnergySeries | undefined, i: number): string {
-  if (!series) return '—';
+  if (!series) return 'n/a';
   const start = series.startIndex ?? 0;
   const idx = i - start;
-  if (idx < 0 || idx >= series.values.length) return '—';
+  if (idx < 0 || idx >= series.values.length) return 'n/a';
   return fmt(series.values[idx]);
 }
 

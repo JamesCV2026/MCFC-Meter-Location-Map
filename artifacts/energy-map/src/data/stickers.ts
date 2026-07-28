@@ -42,15 +42,16 @@ export const stickers: Sticker[] = [
     rotation: 0,
     images: [etihadPreviewImg],
   },
-  {
-    id: 'sticker-coop',
-    label: 'Co-op Live',
-    src: coopStickerImg,
-    x: 41.04,
-    y: 18.86,
-    width: 6.36,
-    rotation: 0,
-  },
+  // Co-op Live sticker removed for the Meter map (2026-07). Uncomment to restore.
+  // {
+  //   id: 'sticker-coop',
+  //   label: 'Co-op Live',
+  //   src: coopStickerImg,
+  //   x: 41.04,
+  //   y: 18.86,
+  //   width: 6.36,
+  //   rotation: 0,
+  // },
   {
     id: 'sticker-campus-new',
     label: 'Etihad Campus',
