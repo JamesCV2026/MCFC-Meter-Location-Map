@@ -11,6 +11,15 @@
   --breakpoint-xs: 30rem;
 }
 
+/* Gentle nudge for the "Click to explore" hint — much subtler than Tailwind's
+   animate-bounce. Keeps the -50% x-centering while nudging a few px vertically. */
+@keyframes hint-nudge {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, 3px); }
+}
+.hint-nudge { animation: hint-nudge 1.9s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .hint-nudge { animation: none; } }
+
 @theme inline {
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));

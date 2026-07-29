@@ -9,6 +9,7 @@ import { panelInfoFor } from '@/data/panelInfo';
 export interface HighlightTarget {
   type?: AssetType;
   id?: string;
+  ids?: string[]; // highlight a specific set of assets (e.g. all of a site's)
 }
 
 interface FilterPanelProps {
@@ -56,11 +57,108 @@ export function FilterPanel({ visible, onChange, embedded = false, assets, onHov
       return next;
     });
 
+  const indexTypes = ENABLED_TYPES.filter((type) => type !== 'building');
+
+  // ── Index list (dashboard) ────────────────────────────────────────────────
+  // Google-Maps-style category list: each infrastructure type is a compact
+  // card that sizes to its content (single centered row: checkbox, icon tile,
+  // text block, chevron). Cards sit close together as one group; expanding a
+  // card reveals its assets beneath the row.
+  if (embedded && indexMode) {
+    return (
+      <div
+        data-testid="filter-panel"
+        onMouseLeave={() => onHover!(null)}
+        className="flex-1 min-h-0 w-full flex flex-col"
+      >
+        <p className="shrink-0 text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3 leading-none">
+          Infrastructure Index
+        </p>
+        <div className="flex-1 min-h-0 overflow-y-auto pr-0.5 flex flex-col gap-2">
+          {indexTypes.filter((type) => (byType.get(type)?.length ?? 0) > 0).map((type) => {
+            const { label, color, Icon } = assetTypeConfig[type];
+            const checked = visible.has(type);
+            const list = byType.get(type) ?? [];
+            const isExp = expanded.has(type);
+            const canExpand = list.length > 0;
+            return (
+              <div
+                key={type}
+                className={`flex flex-col rounded-xl border border-gray-200 bg-white overflow-hidden transition-colors ${isExp ? 'flex-[3] min-h-[150px]' : 'flex-1 min-h-[60px] justify-center hover:bg-gray-50'}`}
+                onMouseEnter={() => { if (checked) onHover!({ type }); }}
+                onMouseLeave={() => onHover!(null)}
+              >
+                <div className="flex items-center gap-3 px-4 py-3.5">
+                  <input
+                    type="checkbox"
+                    data-testid={`filter-${type}`}
+                    checked={checked}
+                    onChange={(e) => onChange(type, e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 cursor-pointer shrink-0"
+                    style={{ accentColor: color }}
+                  />
+                  <span
+                    className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 transition-opacity"
+                    style={{ backgroundColor: color + '1f', opacity: checked ? 1 : 0.45 }}
+                  >
+                    <Icon size={18} style={{ color }} />
+                  </span>
+                  <button
+                    type="button"
+                    disabled={!canExpand}
+                    onClick={() => canExpand && toggle(type)}
+                    className={`flex-1 min-w-0 text-left ${canExpand ? 'cursor-pointer' : 'cursor-default'}`}
+                  >
+                    <span className={`block text-[14px] font-semibold leading-tight truncate ${checked ? 'text-gray-800' : 'text-gray-400'}`}>{label}</span>
+                    <span className="block text-[13px] font-normal text-gray-400 leading-tight mt-0.5">
+                      {list.length} {list.length === 1 ? 'asset' : 'assets'}
+                    </span>
+                  </button>
+                  {canExpand && (
+                    <button
+                      type="button"
+                      onClick={() => toggle(type)}
+                      aria-label={isExp ? `Collapse ${label} list` : `Expand ${label} list`}
+                      className="shrink-0 p-1 -m-1 text-gray-400 hover:text-gray-600 cursor-pointer"
+                    >
+                      <ChevronRight size={16} className={`transition-transform ${isExp ? 'rotate-90' : ''}`} />
+                    </button>
+                  )}
+                </div>
+                {canExpand && isExp && (
+                  <ul className="flex-1 min-h-0 overflow-y-auto px-4 pb-3 pt-2 space-y-0.5 border-t border-gray-100">
+                    {list.map((a) => (
+                      <li key={a.id}>
+                        <button
+                          type="button"
+                          data-testid={`index-item-${a.id}`}
+                          onMouseEnter={() => onHover!({ id: a.id })}
+                          onMouseLeave={() => onHover!(null)}
+                          onClick={() => onSelect?.(a)}
+                          className="w-full text-left text-[13px] text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md px-2 py-1.5 truncate transition-colors"
+                          title={displayName(a)}
+                        >
+                          {displayName(a)}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       data-testid="filter-panel"
       onMouseLeave={() => { if (indexMode) onHover!(null); }}
-      className={`${embedded ? '' : 'hidden xs:block absolute top-3 right-3 z-20 '}bg-white/95 backdrop-blur-sm rounded-lg border border-gray-200 shadow-lg p-2 sm:p-3 min-w-[150px] sm:min-w-[190px] max-h-[70vh] overflow-y-auto text-[10px] sm:text-xs`}
+      className={embedded
+        ? 'flex-1 min-h-0 w-full bg-white rounded-lg border border-gray-200 shadow-sm p-2 sm:p-3 overflow-y-auto text-[10px] sm:text-xs'
+        : 'hidden xs:block absolute top-3 right-3 z-20 bg-white/95 backdrop-blur-sm rounded-lg border border-gray-200 shadow-lg p-2 sm:p-3 min-w-[150px] sm:min-w-[190px] max-h-[70vh] overflow-y-auto text-[10px] sm:text-xs'}
     >
       <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2 leading-none">
         {indexMode ? 'Infrastructure Index' : 'Filter Infrastructure'}

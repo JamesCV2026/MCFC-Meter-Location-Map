@@ -16,6 +16,7 @@ import { StickerPicker } from './StickerPicker';
 import { AssetInfoPanel } from './AssetInfoPanel';
 import { useStickerLibrary, stickerToPanelItem } from '@/data/stickerLibrary';
 import { FilterPanel, HighlightTarget } from './FilterPanel';
+import { groupsForSubmap } from '@/data/siteAssetGroups';
 import { Legend } from './Legend';
 import { ServicesDuctOverlay } from './ServicesDuctOverlay';
 import { VIEW_ONLY } from '@/viewOnly';
@@ -177,6 +178,18 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
   // Infrastructure index highlight — hovering a group/item in the FilterPanel
   // lights up the matching markers (and dims the rest).
   const [highlight, setHighlight] = useState<HighlightTarget | null>(null);
+  // Site → assets index for THIS sub-map's Assets list (resolves the curated
+  // group asset names to this sub-map's markers).
+  const siteAssetsIndex = useMemo(() => {
+    const byName = new Map<string, EnergyAsset>();
+    for (const a of assets) if (a.name) byName.set(a.name, a);
+    const index: Record<string, EnergyAsset[]> = {};
+    for (const g of groupsForSubmap(subMapId)) {
+      const list = g.assetNames.map((n) => byName.get(n)).filter(Boolean) as EnergyAsset[];
+      if (list.length) index[g.id] = list;
+    }
+    return index;
+  }, [assets, subMapId]);
   const [stickersHidden, setStickersHidden] = useState(false);
   // Top layer (z > markers) where every sticker portals its name label, so
   // labels are never hidden behind a nearby marker icon.
@@ -1123,7 +1136,56 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
       {/* Map area — same fit-in-viewport treatment as the overview:
           the 16:9 sub-map always fits inside the visible area with
           letterbox bars on whichever axis has slack. No scrolling required. */}
-      <main className="flex-1 min-h-0 flex items-center justify-center overflow-hidden p-3">
+      <main className="flex-1 min-h-0 flex items-center justify-center overflow-hidden bg-gray-100">
+        {/* The three columns are wrapped in a block that sizes to the map's own
+            height (the map keeps its size; the block is only as tall as the map),
+            so the side panels reach exactly the map's bottom edge — no white band
+            under the map, no columns overrunning it. The block is centred in the
+            available area. */}
+        <div data-testid="submap-row" className="flex items-stretch w-full max-h-full">
+        {/* ── LEFT dashboard — this sub-map's Assets list + toggles ── */}
+        {!editMode && (
+          <aside data-testid="submap-left-dashboard" className="hidden xs:flex flex-col gap-3 flex-1 min-w-[190px] overflow-hidden bg-slate-50 border-r border-gray-200 p-3">
+            {!legendHidden && (
+              <Legend
+                embedded
+                onlySubmap={subMapId}
+                stickersByView={stickerLib.stickersByView}
+                siteAssets={siteAssetsIndex}
+                onHoverAsset={setHighlight}
+                onSelectAsset={(a) => { setHighlight(null); handleOpen(a); }}
+              />
+            )}
+            <div className="flex flex-col bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden text-xs font-semibold text-gray-700 shrink-0">
+              {stickerLib.placed.length > 0 && (
+                <button data-testid="btn-toggle-stickers" onClick={() => setStickersHidden((v) => !v)} className="flex items-center gap-1.5 px-3 py-2 hover:bg-gray-50 transition-colors" title={stickersHidden ? 'Show all stickers' : 'Hide all stickers'}>
+                  <Sticker size={13} className={stickersHidden ? 'text-gray-400' : 'text-indigo-500'} />
+                  {stickersHidden ? 'Show stickers' : 'Hide stickers'}
+                </button>
+              )}
+              {userLabels.length > 0 && (
+                <button data-testid="btn-toggle-labels" onClick={() => setLabelsHidden((v) => !v)} className="flex items-center gap-1.5 px-3 py-2 border-t border-gray-200 hover:bg-gray-50 transition-colors" title={labelsHidden ? 'Show all labels' : 'Hide all labels'}>
+                  <Tag size={13} className={labelsHidden ? 'text-gray-400' : 'text-indigo-500'} />
+                  {labelsHidden ? 'Show labels' : 'Hide labels'}
+                </button>
+              )}
+              <button data-testid="btn-toggle-legend" onClick={handleToggleLegend} className="flex items-center gap-1.5 px-3 py-2 border-t border-gray-200 hover:bg-gray-50 transition-colors" title={legendHidden ? 'Show the assets panel' : 'Hide the assets panel'}>
+                <List size={13} className={legendHidden ? 'text-gray-400' : 'text-indigo-500'} />
+                {legendHidden ? 'Show assets' : 'Hide assets'}
+              </button>
+              <button data-testid="btn-toggle-filter" onClick={handleToggleFilter} className="flex items-center gap-1.5 px-3 py-2 border-t border-gray-200 hover:bg-gray-50 transition-colors" title={filterHidden ? 'Show the infrastructure index' : 'Hide the infrastructure index'}>
+                <Filter size={13} className={filterHidden ? 'text-gray-400' : 'text-indigo-500'} />
+                {filterHidden ? 'Show index' : 'Hide index'}
+              </button>
+            </div>
+          </aside>
+        )}
+
+        {/* ── CENTER — the map ── */}
+        {/* Cap the map width on wide screens so the two dashboard columns get a
+            comfortable ~250px each (enough for full index labels), letterboxing
+            the map slightly rather than starving the side panels. */}
+        <div className="shrink-0 w-full lg:w-[calc(100%_-_560px)] flex items-center justify-center overflow-hidden relative p-3">
         <div
           ref={mapRef}
           data-testid="map-container"
@@ -1136,8 +1198,7 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
           }`}
           style={{
             aspectRatio: '16 / 9',
-            height: '100%',
-            maxWidth: '100%',
+            width: '100%',
             maxHeight: '100%',
           }}
           onClick={handleMapClick}
@@ -1355,7 +1416,9 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
             // Infrastructure-index highlight: does this marker match what the
             // FilterPanel is hovering (a whole type, or one specific asset)?
             const matchesHighlight = highlight
-              ? (highlight.id ? highlight.id === asset.id : highlight.type === (asset.idno ? 'idno' : asset.type))
+              ? (highlight.ids ? highlight.ids.includes(asset.id)
+                  : highlight.id ? highlight.id === asset.id
+                  : highlight.type === (asset.idno ? 'idno' : asset.type))
               : false;
             const dimmed = highlight != null && !matchesHighlight;
             // Building markers render a little larger so they stand out;
@@ -1474,13 +1537,7 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
           </div>
           {/* end zoomable layer */}
 
-          {/* Campus asset legend — top-left. Hideable via the bottom-left
-              "Hide assets" toggle (legendHidden). */}
-          {!legendHidden && (
-            <div onClick={(e) => e.stopPropagation()}>
-              <Legend stickersByView={stickerLib.stickersByView} />
-            </div>
-          )}
+          {/* Assets legend moved to the left dashboard column (see the <aside>). */}
 
           {/* Zoom controls — bottom-right */}
           <div
@@ -1515,68 +1572,7 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
             </button>
           </div>
 
-          {/* Asset-type filter panel (+ CFA-only services-duct key) — top-right */}
-          <div
-            className="absolute top-3 right-3 z-20 flex flex-col gap-2 w-[180px]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {!filterHidden && (
-              <FilterPanel
-                embedded
-                visible={visibleTypes}
-                onChange={handleFilterChange}
-                assets={assets.filter((a) => visibleTypes.has(a.idno ? 'idno' : a.type))}
-                onHover={setHighlight}
-                onSelect={(a) => { setHighlight(null); handleOpen(a); }}
-              />
-            )}
-            {subMapId === 'cfa-map' && (
-              <div
-                data-testid="services-duct-legend"
-                className="bg-white/95 backdrop-blur-sm rounded-lg border border-gray-200 shadow-lg p-3"
-              >
-                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-1.5 leading-none">
-                  Services Ducts
-                </p>
-                <div className="flex flex-col gap-0.5">
-                  <button
-                    data-testid="toggle-lv-ducts"
-                    onClick={() => setShowLvDucts((v) => !v)}
-                    className="flex items-center gap-2 rounded px-1 py-1 hover:bg-gray-100 transition-colors"
-                    title={showLvDucts ? 'Hide LV services ducts' : 'Show LV services ducts'}
-                  >
-                    <span
-                      className="shrink-0 rounded-full transition-colors"
-                      style={{ width: 22, height: 3, background: showLvDucts ? '#c026d3' : '#d1d5db' }}
-                    />
-                    <span className={`text-xs font-medium ${showLvDucts ? 'text-gray-700' : 'text-gray-400'}`}>
-                      LV Services Duct
-                    </span>
-                    {showLvDucts
-                      ? <Eye size={12} className="ml-auto text-gray-500" />
-                      : <EyeOff size={12} className="ml-auto text-gray-300" />}
-                  </button>
-                  <button
-                    data-testid="toggle-hv-ducts"
-                    onClick={() => setShowHvDucts((v) => !v)}
-                    className="flex items-center gap-2 rounded px-1 py-1 hover:bg-gray-100 transition-colors"
-                    title={showHvDucts ? 'Hide HV services ducts' : 'Show HV services ducts'}
-                  >
-                    <span
-                      className="shrink-0 rounded-full transition-colors"
-                      style={{ width: 22, height: 3, background: showHvDucts ? '#06b6d4' : '#d1d5db' }}
-                    />
-                    <span className={`text-xs font-medium ${showHvDucts ? 'text-gray-700' : 'text-gray-400'}`}>
-                      HV Services Duct
-                    </span>
-                    {showHvDucts
-                      ? <Eye size={12} className="ml-auto text-gray-500" />
-                      : <EyeOff size={12} className="ml-auto text-gray-300" />}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Services-duct key moved to the right dashboard column. */}
 
           {/* Sticker / label / assets-panel visibility toggles — bottom-left.
               Always rendered now, because the "Hide assets" toggle is always
@@ -1596,51 +1592,43 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
               Undo cable edit
             </button>
           )}
-          <div
-            className="flex flex-col bg-white/95 backdrop-blur-sm rounded-lg border border-gray-200 shadow-lg overflow-hidden text-xs font-semibold text-gray-700"
-          >
-            {stickerLib.placed.length > 0 && (
-              <button
-                data-testid="btn-toggle-stickers"
-                onClick={() => setStickersHidden((v) => !v)}
-                className="flex items-center gap-1.5 px-3 py-2 hover:bg-gray-50 transition-colors"
-                title={stickersHidden ? 'Show all stickers' : 'Hide all stickers'}
-              >
-                <Sticker size={13} className={stickersHidden ? 'text-gray-400' : 'text-indigo-500'} />
-                {stickersHidden ? 'Show stickers' : 'Hide stickers'}
-              </button>
-            )}
-            {userLabels.length > 0 && (
-              <button
-                data-testid="btn-toggle-labels"
-                onClick={() => setLabelsHidden((v) => !v)}
-                className={`flex items-center gap-1.5 px-3 py-2 hover:bg-gray-50 transition-colors${stickerLib.placed.length > 0 ? ' border-t border-gray-200' : ''}`}
-                title={labelsHidden ? 'Show all labels' : 'Hide all labels'}
-              >
-                <Tag size={13} className={labelsHidden ? 'text-gray-400' : 'text-indigo-500'} />
-                {labelsHidden ? 'Show labels' : 'Hide labels'}
-              </button>
-            )}
-            <button
-              data-testid="btn-toggle-legend"
-              onClick={handleToggleLegend}
-              className={`flex items-center gap-1.5 px-3 py-2 hover:bg-gray-50 transition-colors${(stickerLib.placed.length > 0 || userLabels.length > 0) ? ' border-t border-gray-200' : ''}`}
-              title={legendHidden ? 'Show the assets panel' : 'Hide the assets panel'}
-            >
-              <List size={13} className={legendHidden ? 'text-gray-400' : 'text-indigo-500'} />
-              {legendHidden ? 'Show assets' : 'Hide assets'}
-            </button>
-            <button
-              data-testid="btn-toggle-filter"
-              onClick={handleToggleFilter}
-              className="flex items-center gap-1.5 px-3 py-2 hover:bg-gray-50 transition-colors border-t border-gray-200"
-              title={filterHidden ? 'Show the filter panel' : 'Hide the filter panel'}
-            >
-              <Filter size={13} className={filterHidden ? 'text-gray-400' : 'text-indigo-500'} />
-              {filterHidden ? 'Show filters' : 'Hide filters'}
-            </button>
+          {/* Sticker/label/assets/index toggles moved to the left dashboard column. */}
           </div>
-          </div>
+        </div>
+        </div>
+
+        {/* ── RIGHT dashboard — this sub-map's Infrastructure Index ── */}
+        {!editMode && (!filterHidden || subMapId === 'cfa-map') && (
+          <aside data-testid="submap-right-dashboard" className="hidden xs:flex flex-col gap-3 flex-1 min-w-[190px] overflow-y-auto bg-slate-50 border-l border-gray-200 p-3">
+            {!filterHidden && (
+              <FilterPanel
+                embedded
+                visible={visibleTypes}
+                onChange={handleFilterChange}
+                assets={assets.filter((a) => visibleTypes.has(a.idno ? 'idno' : a.type))}
+                onHover={setHighlight}
+                onSelect={(a) => { setHighlight(null); handleOpen(a); }}
+              />
+            )}
+            {subMapId === 'cfa-map' && (
+              <div data-testid="services-duct-legend" className="bg-white rounded-lg border border-gray-200 shadow-sm p-3 shrink-0">
+                <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-1.5 leading-none">Services Ducts</p>
+                <div className="flex flex-col gap-0.5">
+                  <button data-testid="toggle-lv-ducts" onClick={() => setShowLvDucts((v) => !v)} className="flex items-center gap-2 rounded px-1 py-1 hover:bg-gray-100 transition-colors" title={showLvDucts ? 'Hide LV services ducts' : 'Show LV services ducts'}>
+                    <span className="shrink-0 rounded-full transition-colors" style={{ width: 22, height: 3, background: showLvDucts ? '#c026d3' : '#d1d5db' }} />
+                    <span className={`text-xs font-medium ${showLvDucts ? 'text-gray-700' : 'text-gray-400'}`}>LV Services Duct</span>
+                    {showLvDucts ? <Eye size={12} className="ml-auto text-gray-500" /> : <EyeOff size={12} className="ml-auto text-gray-300" />}
+                  </button>
+                  <button data-testid="toggle-hv-ducts" onClick={() => setShowHvDucts((v) => !v)} className="flex items-center gap-2 rounded px-1 py-1 hover:bg-gray-100 transition-colors" title={showHvDucts ? 'Hide HV services ducts' : 'Show HV services ducts'}>
+                    <span className="shrink-0 rounded-full transition-colors" style={{ width: 22, height: 3, background: showHvDucts ? '#06b6d4' : '#d1d5db' }} />
+                    <span className={`text-xs font-medium ${showHvDucts ? 'text-gray-700' : 'text-gray-400'}`}>HV Services Duct</span>
+                    {showHvDucts ? <Eye size={12} className="ml-auto text-gray-500" /> : <EyeOff size={12} className="ml-auto text-gray-300" />}
+                  </button>
+                </div>
+              </div>
+            )}
+          </aside>
+        )}
         </div>
       </main>
 

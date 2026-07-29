@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { MapPin, ArrowRight, ZoomIn, ZoomOut, GripHorizontal, Pencil, Check } from 'lucide-react';
+import { MapPin, ArrowRight, ZoomIn, ZoomOut, GripHorizontal, Pencil, Check, MousePointerClick } from 'lucide-react';
 import { Site } from '@/data/sites';
 
 interface SiteLabelProps {
@@ -167,6 +167,16 @@ export function SiteLabel({ site, mapRef, onClick, onUpdate, active = false, lab
               : <ZoomIn size={10} className="text-white/80 group-hover:text-white transition-colors shrink-0 ml-0.5" />
           }
         </button>
+      )}
+
+      {/* "Click to explore" hint — draws attention to the drill-in pills so
+          users know the campus blobs are interactive. Only on non-edit,
+          navigable (sub-map) pills that aren't already zoomed in. */}
+      {!labelEditMode && site.style !== 'tag' && site.subMapId && !active && (
+        <div className="hint-nudge absolute left-1/2 top-full mt-1 pointer-events-none flex items-center gap-1 whitespace-nowrap rounded-full bg-white/95 border border-emerald-200 px-2 py-0.5 shadow-md text-[9px] font-bold text-emerald-700">
+          <MousePointerClick size={10} className="text-emerald-600 shrink-0" />
+          Click to explore
+        </div>
       )}
     </div>
   );

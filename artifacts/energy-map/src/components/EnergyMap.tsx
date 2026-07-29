@@ -26,6 +26,7 @@ import { WindScenarioModal } from './WindScenarioModal';
 import { AddLabelDialog } from './AddLabelDialog';
 import { FreeLabel } from './FreeLabel';
 import { submaps } from '@/data/submaps';
+import { SITE_ASSET_GROUPS } from '@/data/siteAssetGroups';
 import { RegionBox } from './RegionBox';
 import { loadSubMapRegions, saveSubMapRegions, SubMapRegion } from '@/data/submapRegions';
 import mapImage from '@assets/Overview_1779198593346.png';
@@ -396,6 +397,26 @@ export function EnergyMap() {
   }, [subMapRegions, activeSubMapId, overviewPositions, projectionVersion, assets]);
 
   const projectedIds = useMemo(() => new Set(projectedAssets.map((a) => a.id)), [projectedAssets]);
+
+  // Proximity index: which infrastructure assets belong to each site, for the
+  // expandable Assets list. Solar arrays are named after their site (e.g.
+  // "Joie Stadium Solar Array"), so each array anchors a site; every inverter
+  // is grouped under the site of its NEAREST array. First pass = arrays +
+  // inverters (James will hand-correct any mis-groupings). Keyed by site id.
+  const siteAssetsIndex = useMemo(() => {
+    // Resolve each group's asset NAMES to real asset objects. Prefer the
+    // overview copy (its id matches the rendered marker, so hover-highlight and
+    // click-open work), falling back to the sub-map asset.
+    const byName = new Map<string, EnergyAsset>();
+    for (const sm of submaps) for (const a of loadSubMapAssets(sm.id)) if (a.name && !deletedAssetIds.has(a.id)) byName.set(a.name, a);
+    for (const a of [...projectedAssets, ...assets]) if (a.name && !deletedAssetIds.has(a.id)) byName.set(a.name, a);
+    const index: Record<string, EnergyAsset[]> = {};
+    for (const g of SITE_ASSET_GROUPS) {
+      const list = g.assetNames.map((n) => byName.get(n)).filter(Boolean) as EnergyAsset[];
+      if (list.length) index[g.id] = list;
+    }
+    return index;
+  }, [projectionVersion, assets, projectedAssets, deletedAssetIds]);
 
   // Names visible on the overview as free/site labels. Stickers whose display
   // name matches one of these skip their own auto-name tag — the explicit
@@ -1841,8 +1862,49 @@ export function EnergyMap() {
           the data panel is opened, its own body scrolls internally. */}
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
       <main
-        className="flex-1 min-h-0 flex items-center justify-center overflow-hidden"
+        className={dataPanelOpen ? 'hidden' : 'flex-1 min-h-0 flex overflow-hidden'}
       >
+        {/* ── LEFT dashboard column (off the map): Assets list + view toggles ── */}
+        {!editMode && (
+          <aside data-testid="left-dashboard" className="hidden xs:flex flex-col gap-3 flex-1 min-w-[190px] overflow-hidden bg-slate-50 border-r border-gray-200 p-3">
+            {!legendHidden && (
+              <Legend
+                embedded
+                stickersByView={stickerLib.stickersByView}
+                onOpenChart={() => setChartOpen(true)}
+                onOpenData={() => setDataPanelOpen(true)}
+                onOpenSavings={() => setSavingsModalOpen(true)}
+                siteAssets={siteAssetsIndex}
+                onHoverAsset={setHighlight}
+                onSelectAsset={(a) => { setHighlight(null); handleOpen(a); }}
+                onSelectSite={(site) => { setHighlight(null); stickerLib.setInfoItem(assetToPanelItem(site)); }}
+              />
+            )}
+            <div className="flex flex-col bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden text-xs font-semibold text-gray-700 shrink-0">
+              <button data-testid="btn-toggle-stickers" onClick={handleToggleStickers} className="flex items-center gap-1.5 px-3 py-2 hover:bg-gray-50 transition-colors" title={stickersHidden ? 'Show all site stickers' : 'Hide all site stickers'}>
+                <Sticker size={13} className={stickersHidden ? 'text-gray-400' : 'text-indigo-500'} />
+                {stickersHidden ? 'Show stickers' : 'Hide stickers'}
+              </button>
+              <button data-testid="btn-toggle-labels" onClick={handleToggleLabels} className="flex items-center gap-1.5 px-3 py-2 border-t border-gray-200 hover:bg-gray-50 transition-colors" title={labelsHidden ? 'Show all labels' : 'Hide all labels'}>
+                <Tag size={13} className={labelsHidden ? 'text-gray-400' : 'text-indigo-500'} />
+                {labelsHidden ? 'Show labels' : 'Hide labels'}
+              </button>
+              <button data-testid="btn-toggle-legend" onClick={handleToggleLegend} className="flex items-center gap-1.5 px-3 py-2 border-t border-gray-200 hover:bg-gray-50 transition-colors" title={legendHidden ? 'Show the assets panel' : 'Hide the assets panel'}>
+                <List size={13} className={legendHidden ? 'text-gray-400' : 'text-indigo-500'} />
+                {legendHidden ? 'Show assets' : 'Hide assets'}
+              </button>
+              <button data-testid="btn-toggle-filter" onClick={handleToggleFilter} className="flex items-center gap-1.5 px-3 py-2 border-t border-gray-200 hover:bg-gray-50 transition-colors" title={filterHidden ? 'Show the infrastructure index' : 'Hide the infrastructure index'}>
+                <Filter size={13} className={filterHidden ? 'text-gray-400' : 'text-indigo-500'} />
+                {filterHidden ? 'Show index' : 'Hide index'}
+              </button>
+            </div>
+          </aside>
+        )}
+
+        {/* ── CENTER — the map itself. shrink-0 so this column hugs the 16:9
+             map exactly; the side dashboards (flex-1) then absorb ALL the
+             left-over width, so there's no grey letterbox around the map. ── */}
+        <div className="shrink-0 max-w-full lg:max-w-[calc(100%_-_560px)] h-full flex items-center justify-center overflow-hidden relative">
         <div
           data-testid="map-container"
           ref={mapRef}
@@ -2148,7 +2210,9 @@ export function EnergyMap() {
               const markerColor = asset.idno ? assetTypeConfig['idno'].color : meta.color;
               // Infrastructure-index highlight from the FilterPanel hover.
               const matchesHighlight = highlight
-                ? (highlight.id ? highlight.id === asset.id : highlight.type === (asset.idno ? 'idno' : asset.type))
+                ? (highlight.ids ? highlight.ids.includes(asset.id)
+                    : highlight.id ? highlight.id === asset.id
+                    : highlight.type === (asset.idno ? 'idno' : asset.type))
                 : false;
               const dimmed = highlight != null && !matchesHighlight;
               // Building markers render a little larger so they stand out. On
@@ -2296,24 +2360,9 @@ export function EnergyMap() {
             ))}
           </div>
 
-          {/* Controls sit outside the zoom layer so they don't scale */}
-          {!editMode && !legendHidden && (
-            <Legend
-              stickersByView={stickerLib.stickersByView}
-              onOpenChart={() => setChartOpen(true)}
-              onOpenData={() => setDataPanelOpen(true)}
-              onOpenSavings={() => setSavingsModalOpen(true)}
-            />
-          )}
-          {!editMode && !filterHidden && (
-            <FilterPanel
-              visible={visibleTypes}
-              onChange={handleFilterChange}
-              assets={visibleAssets}
-              onHover={setHighlight}
-              onSelect={(a) => { setHighlight(null); handleOpen(a); }}
-            />
-          )}
+          {/* Assets panel (Legend) and Infrastructure Index (FilterPanel) now
+              live in the off-map dashboard columns — see the <aside> elements
+              wrapping this map, not overlaid here. */}
 
           {/* Zoom controls */}
           <div
@@ -2367,44 +2416,7 @@ export function EnergyMap() {
                   Undo cable edit
                 </button>
               )}
-              <div className="flex flex-col bg-white/95 backdrop-blur-sm rounded-lg border border-gray-200 shadow-lg overflow-hidden text-xs font-semibold text-gray-700">
-              <button
-                data-testid="btn-toggle-stickers"
-                onClick={handleToggleStickers}
-                className="flex items-center gap-1.5 px-3 py-2 hover:bg-gray-50 transition-colors"
-                title={stickersHidden ? 'Show all site stickers' : 'Hide all site stickers'}
-              >
-                <Sticker size={13} className={stickersHidden ? 'text-gray-400' : 'text-indigo-500'} />
-                {stickersHidden ? 'Show stickers' : 'Hide stickers'}
-              </button>
-              <button
-                data-testid="btn-toggle-labels"
-                onClick={handleToggleLabels}
-                className="flex items-center gap-1.5 px-3 py-2 border-t border-gray-200 hover:bg-gray-50 transition-colors"
-                title={labelsHidden ? 'Show all labels' : 'Hide all labels'}
-              >
-                <Tag size={13} className={labelsHidden ? 'text-gray-400' : 'text-indigo-500'} />
-                {labelsHidden ? 'Show labels' : 'Hide labels'}
-              </button>
-              <button
-                data-testid="btn-toggle-legend"
-                onClick={handleToggleLegend}
-                className="flex items-center gap-1.5 px-3 py-2 border-t border-gray-200 hover:bg-gray-50 transition-colors"
-                title={legendHidden ? 'Show the assets panel' : 'Hide the assets panel'}
-              >
-                <List size={13} className={legendHidden ? 'text-gray-400' : 'text-indigo-500'} />
-                {legendHidden ? 'Show assets' : 'Hide assets'}
-              </button>
-              <button
-                data-testid="btn-toggle-filter"
-                onClick={handleToggleFilter}
-                className="flex items-center gap-1.5 px-3 py-2 border-t border-gray-200 hover:bg-gray-50 transition-colors"
-                title={filterHidden ? 'Show the filter panel' : 'Hide the filter panel'}
-              >
-                <Filter size={13} className={filterHidden ? 'text-gray-400' : 'text-indigo-500'} />
-                {filterHidden ? 'Show filters' : 'Hide filters'}
-              </button>
-              </div>
+              {/* Sticker/label/assets/index toggles moved to the left dashboard column. */}
             </div>
           )}
 
@@ -2420,6 +2432,21 @@ export function EnergyMap() {
             </button>
           )}
         </div>
+        </div>
+
+        {/* ── RIGHT dashboard column (off the map): Infrastructure Index ── */}
+        {!editMode && !filterHidden && (
+          <aside data-testid="right-dashboard" className="hidden xs:flex flex-col flex-1 min-w-[190px] overflow-hidden bg-slate-50 border-l border-gray-200 p-3">
+            <FilterPanel
+              embedded
+              visible={visibleTypes}
+              onChange={handleFilterChange}
+              assets={visibleAssets}
+              onHover={setHighlight}
+              onSelect={(a) => { setHighlight(null); handleOpen(a); }}
+            />
+          </aside>
+        )}
       </main>
 
       <DataPanel open={dataPanelOpen} onToggle={() => setDataPanelOpen((v) => !v)} />

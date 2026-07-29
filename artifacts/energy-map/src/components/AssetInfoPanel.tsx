@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, Zap, Leaf, BarChart3, ImagePlus, ImageOff, Trash2, Pencil, Download } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Zap, Leaf, BarChart3, ImagePlus, ImageOff, Trash2, Pencil, Download, Maximize2, Minimize2 } from 'lucide-react';
 import { fileToPhotoDataUrl, saveStickerPhotos } from '@/data/stickerLibrary';
 import type { AssetPanelItem } from '@/data/stickerLibrary';
 import { VIEW_ONLY } from '@/viewOnly';
@@ -36,6 +36,8 @@ export function AssetInfoPanel({ item, onClose, onBack }: AssetInfoPanelProps) {
   const [subtitleDraft, setSubtitleDraft] = useState('');
   const [narrativeDraft, setNarrativeDraft] = useState('');
   const [hhModal, setHhModal] = useState<{ url: string; label: string } | null>(null);
+  // Expanded = blow the panel up into a centered modal to focus on one site.
+  const [expanded, setExpanded] = useState(false);
 
   // Reset photo list + carousel + panel text when a different asset's panel opens.
   useEffect(() => {
@@ -44,6 +46,7 @@ export function AssetInfoPanel({ item, onClose, onBack }: AssetInfoPanelProps) {
     setInfo(panelInfoFor(item.id));
     setEditingInfo(false);
     setHhModal(null);
+    setExpanded(false);
   }, [item.id]);
 
   // What the carousel shows: real photos if any, otherwise the sticker graphic.
@@ -132,19 +135,24 @@ export function AssetInfoPanel({ item, onClose, onBack }: AssetInfoPanelProps) {
         }
       `}</style>
 
-      {/* Dimmed backdrop — mobile only; desktop keeps the map interactive */}
+      {/* Dimmed backdrop — mobile always; desktop only when expanded into a
+          focused modal (otherwise the desktop map stays interactive). */}
       <div
-        className="fixed inset-0 z-[89] bg-black/40 sm:hidden"
+        className={`fixed inset-0 z-[89] bg-black/40 ${expanded ? 'block backdrop-blur-sm' : 'sm:hidden'}`}
         onClick={onClose}
       />
 
       <div
         data-testid="asset-info-panel"
-        className="fixed z-[90] flex flex-col bg-white shadow-2xl overflow-hidden
+        className={expanded
+          ? 'fixed z-[90] top-1/2 left-1/2 flex flex-col bg-white shadow-2xl overflow-hidden w-[min(92vw,900px)] max-h-[90vh] rounded-2xl border border-gray-200'
+          : `fixed z-[90] flex flex-col bg-white shadow-2xl overflow-hidden
                    inset-x-0 bottom-0 max-h-[85vh] rounded-t-2xl
                    sm:inset-x-auto sm:left-auto sm:right-0 sm:top-0 sm:bottom-0
-                   sm:w-[400px] sm:max-h-none sm:rounded-t-none sm:border-l sm:border-gray-200"
-        style={{ animation: 'asset-panel-in 0.28s cubic-bezier(0.16, 1, 0.3, 1)' }}
+                   sm:w-[400px] sm:max-h-none sm:rounded-t-none sm:border-l sm:border-gray-200`}
+        style={expanded
+          ? { transform: 'translate(-50%, -50%)' }
+          : { animation: 'asset-panel-in 0.28s cubic-bezier(0.16, 1, 0.3, 1)' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drag-handle affordance (mobile) */}
@@ -212,6 +220,15 @@ export function AssetInfoPanel({ item, onClose, onBack }: AssetInfoPanelProps) {
             aria-label="Close"
           >
             <X size={16} />
+          </button>
+          <button
+            data-testid="asset-info-expand"
+            onClick={() => setExpanded((v) => !v)}
+            title={expanded ? 'Collapse panel' : 'Expand to focus on this site'}
+            className="absolute top-3 right-12 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow flex items-center justify-center text-gray-600 hover:bg-white hover:text-gray-900 transition-colors"
+            aria-label={expanded ? 'Collapse panel' : 'Expand panel'}
+          >
+            {expanded ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
           </button>
 
           {/* Photo manager — editor only, hidden on the published view-only site */}

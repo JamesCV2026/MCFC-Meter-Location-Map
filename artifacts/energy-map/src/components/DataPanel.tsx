@@ -536,7 +536,9 @@ export function DataPanel({ open, onToggle }: DataPanelProps) {
     ? `${openRow.group === 'etihad' ? 'Etihad Stadium Campus' : 'City Football Academy'} · ${openRow.dataType} · ${fmt(openRow.kwh)} kWh total`
     : '';
   return (
-    <div className="shrink-0 border-t border-gray-200 bg-white shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
+    <div className={open
+      ? 'flex-1 min-h-0 flex flex-col border-t border-gray-200 bg-white'
+      : 'shrink-0 border-t border-gray-200 bg-white shadow-[0_-4px_16px_rgba(0,0,0,0.06)]'}>
       {/* Collapsed state: bold emerald bar with a clear "click to open" cue so
           it reads as an active drawer, not a static footer. Expanded state:
           quieter grey so it recedes behind the data. */}
@@ -566,10 +568,9 @@ export function DataPanel({ open, onToggle }: DataPanelProps) {
       </button>
 
       {open && (
-        // Expanded body scrolls internally so the outer layout can keep the
-        // map locked to the visible viewport. Cap the panel at 70 vh so the
-        // map above still shows at least ~30 % of the viewport when open.
-        <div className="px-6 pb-5 pt-1 overflow-y-auto" style={{ maxHeight: '70vh' }}>
+        // Expanded body fills the space freed by hiding the map (EnergyMap
+        // hides <main> while the data panel is open), and scrolls internally.
+        <div className="flex-1 min-h-0 px-6 pb-5 pt-1 overflow-y-auto">
           <div className="flex gap-4">
             <EnergyTable
               title="Total Grid Consumption"

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Trash2, Pencil, Upload, ImagePlus, Download, ChevronLeft, ChevronRight, Plug, Zap, PiggyBank } from 'lucide-react';
+import { X, Trash2, Pencil, Upload, ImagePlus, Download, ChevronLeft, ChevronRight, Plug, Zap, PiggyBank, Maximize2, Minimize2 } from 'lucide-react';
 import { EnergyAsset } from '@/data/assets';
 import { assetTypeConfig } from '@/data/assetTypes';
 import { VIEW_ONLY } from '@/viewOnly';
@@ -72,6 +72,8 @@ export function SidePanel({ asset, onClose, onDelete, hideDelete = false }: Side
   const [showMethodology, setShowMethodology] = useState(false);
   // Inverter panel: 0 = Total/Summary, 1..N = individual inverter columns.
   const [invTab, setInvTab] = useState(0);
+  // Expanded = blow the panel up into a centered modal to focus on one site.
+  const [expanded, setExpanded] = useState(false);
 
   // Reset state whenever a different marker is opened/closed.
   useEffect(() => {
@@ -81,6 +83,7 @@ export function SidePanel({ asset, onClose, onDelete, hideDelete = false }: Side
     setEditingTitle(false);
     setTab('generation');
     setInvTab(0);
+    setExpanded(false);
     // Load this asset's stored photos for the carousel.
     if (asset) {
       const store = loadStickerPhotos();
@@ -101,17 +104,18 @@ export function SidePanel({ asset, onClose, onDelete, hideDelete = false }: Side
       {isOpen && (
         <div
           data-testid="side-panel-overlay"
-          className="fixed inset-0 z-40 bg-black/10"
+          className={`fixed inset-0 z-40 transition-colors duration-300 ${expanded ? 'bg-black/40 backdrop-blur-sm' : 'bg-black/10'}`}
           onClick={onClose}
         />
       )}
       <div
         data-testid="side-panel"
-        className="fixed top-0 right-0 h-full z-50 bg-white shadow-2xl border-l border-gray-200 flex flex-col transition-transform duration-300 ease-in-out"
-        style={{
-          width: 480,
-          transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
-        }}
+        className={expanded
+          ? 'fixed top-1/2 left-1/2 z-50 bg-white shadow-2xl border border-gray-200 rounded-2xl flex flex-col overflow-hidden'
+          : 'fixed top-0 right-0 h-full z-50 bg-white shadow-2xl border-l border-gray-200 flex flex-col transition-transform duration-300 ease-in-out'}
+        style={expanded
+          ? { transform: 'translate(-50%, -50%)', width: 'min(92vw, 900px)', maxHeight: '90vh' }
+          : { width: 480, transform: isOpen ? 'translateX(0)' : 'translateX(100%)' }}
       >
         {asset && (() => {
           const cfg = assetTypeConfig[asset.type];
@@ -249,9 +253,17 @@ export function SidePanel({ asset, onClose, onDelete, hideDelete = false }: Side
                   </div>
                 </div>
                 <button
+                  data-testid="side-panel-expand"
+                  onClick={() => setExpanded((v) => !v)}
+                  title={expanded ? 'Collapse panel' : 'Expand to focus on this site'}
+                  className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors shrink-0 ml-auto mt-0.5"
+                >
+                  {expanded ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
+                </button>
+                <button
                   data-testid="side-panel-close"
                   onClick={onClose}
-                  className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors shrink-0 ml-4 mt-0.5"
+                  className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors shrink-0 ml-1 mt-0.5"
                 >
                   <X size={18} />
                 </button>
