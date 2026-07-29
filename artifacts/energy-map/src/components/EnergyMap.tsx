@@ -9,7 +9,7 @@ import { CableLayer } from './CableLayer';
 import { MarkerTooltip } from './MarkerTooltip';
 import { SidePanel } from './SidePanel';
 import { Legend } from './Legend';
-import { FilterPanel } from './FilterPanel';
+import { FilterPanel, HighlightTarget } from './FilterPanel';
 import { SiteLabel } from './SiteLabel';
 import { StickerOverlay, StickerTransform } from './StickerOverlay';
 import { StickerPicker } from './StickerPicker';
@@ -20,6 +20,7 @@ import { AddMpanDialog } from './AddMpanDialog';
 import { SubMapView } from './SubMapView';
 import { DataPanel, consumptionData, generationData } from './DataPanel';
 import { EnergyBarChartModal } from './EnergyBarChartModal';
+import { SavingsSummaryModal } from './SavingsSummaryModal';
 import { TableModal } from './TableModal';
 import { WindScenarioModal } from './WindScenarioModal';
 import { AddLabelDialog } from './AddLabelDialog';
@@ -298,7 +299,10 @@ export function EnergyMap() {
   const [chartOpen, setChartOpen] = useState(false);
   const [tableModalOpen, setTableModalOpen] = useState(false);
   const [windModalOpen, setWindModalOpen] = useState(false);
+  const [savingsModalOpen, setSavingsModalOpen] = useState(false);
   const [activeSubMapId, setActiveSubMapId] = useState<string | null>(null);
+  // Infrastructure-index highlight (FilterPanel hover → light up markers).
+  const [highlight, setHighlight] = useState<HighlightTarget | null>(null);
   // Sticker library + picker for the main overview map. Reload its placements
   // when returning from a sub-map, since sub-maps write the same storage.
   const stickerLib = useStickerLibrary('main');
@@ -608,7 +612,7 @@ export function EnergyMap() {
   // one of these on the OVERVIEW should navigate straight into its sub-map,
   // not open the overview info panel — per the client's request. Small
   // infrastructure marker icons (MPAN / Transformer / etc.) are unaffected.
-  const stickerToSubMap = useCallback((label: string, transform?: StickerTransform): string | null => {
+  const stickerToSubMap = useCallback((label: string, transform?: StickerTransform, position?: { x: number; y: number }): string | null => {
     // 1. If the placement itself carries a non-'main' view, use it directly.
     if (transform && 'view' in transform && typeof (transform as { view?: string }).view === 'string') {
       const v = (transform as { view: string }).view;
@@ -625,8 +629,18 @@ export function EnergyMap() {
       || l.includes('womens facility') || l.includes('mcwfc') || l.includes('ground mount')
       || l.includes('performance centre') || l.includes('city football academy')
       || l.includes('cfa')) return 'cfa-map';
+    // 3. Position-based fallback: the overview building blobs (Joie Stadium,
+    //    Indoor Pitch, etc.) carry generic sticker labels, so also drill in
+    //    when the blob sits inside a calibrated sub-map region.
+    if (position) {
+      for (const sm of submaps) {
+        const r = subMapRegions[sm.id];
+        if (r && position.x >= r.x && position.x <= r.x + r.width
+             && position.y >= r.y && position.y <= r.y + r.height) return sm.id;
+      }
+    }
     return null;
-  }, []);
+  }, [subMapRegions]);
 
   const handleStickerCircleClick = useCallback((label: string, position: { x: number; y: number }, transform?: StickerTransform, fallback?: () => void) => {
     if (editMode || labelEditMode) return;
@@ -637,7 +651,7 @@ export function EnergyMap() {
     setSelectedStickerId(null);
     setHoveredId(null);
     stickerLib.setInfoItem(null);
-    const subMapId = stickerToSubMap(label, transform);
+    const subMapId = stickerToSubMap(label, transform, position);
     if (subMapId) {
       setSubMapOrigin(position);
       setActiveSubMapId(subMapId);
@@ -1426,7 +1440,7 @@ export function EnergyMap() {
         <div className="flex items-center gap-2.5">
           <img src={mcfcLogo} alt="MCFC Group" className="w-9 h-9 rounded-full object-contain" />
           <div>
-            <h1 className="text-sm font-bold text-gray-900 leading-tight">MCFC Campus Feasibility Study</h1>
+            <h1 className="text-sm font-bold text-gray-900 leading-tight">MCFC Campus Map Meter Locations</h1>
             <p className="text-[10px] text-gray-500 leading-tight">Energy Asset Map</p>
             <p className="text-[9px] text-gray-400 leading-tight">Copyright Clearvolt Limited. For CFG use only.</p>
           </div>
@@ -2132,6 +2146,11 @@ export function EnergyMap() {
               const TypeIcon = meta.Icon;
               // IDNO markers keep their real icon but take the IDNO colour.
               const markerColor = asset.idno ? assetTypeConfig['idno'].color : meta.color;
+              // Infrastructure-index highlight from the FilterPanel hover.
+              const matchesHighlight = highlight
+                ? (highlight.id ? highlight.id === asset.id : highlight.type === (asset.idno ? 'idno' : asset.type))
+                : false;
+              const dimmed = highlight != null && !matchesHighlight;
               // Building markers render a little larger so they stand out. On
               // Wind turbines render as a refined white turbine silhouette
               // with a restrained shadow stack (no circular pill, no neon
@@ -2158,9 +2177,11 @@ export function EnergyMap() {
                     // Hovered/dragging markers lift above the sticker labels
                     // layer (z 25) so their tooltip isn't covered by a nearby
                     // building name.
-                    zIndex: isHovered || isDragging ? 35 : 20,
+                    zIndex: (isHovered || isDragging || matchesHighlight) ? 35 : 20,
                     cursor: editMode ? 'grab' : 'pointer',
                     userSelect: 'none',
+                    opacity: dimmed ? 0.35 : 1,
+                    transition: 'opacity 0.15s ease',
                     pointerEvents: (cableEditMode || regionMode) ? 'none' : undefined,
                   }}
                   onMouseEnter={() => { if (!editMode && !cableMode) openHover(asset.id); }}
@@ -2201,9 +2222,12 @@ export function EnergyMap() {
                           color: markerColor,
                           background: markerColor,
                           border: `2px solid ${editMode ? '#fbbf24' : 'white'}`,
+                          transition: 'box-shadow 0.15s ease',
                           boxShadow: editMode
                             ? '0 0 0 3px rgba(251,191,36,0.4), 0 2px 8px rgba(0,0,0,0.4)'
-                            : undefined,
+                            : matchesHighlight
+                              ? `0 0 0 3px white, 0 0 9px 2px ${markerColor}`
+                              : undefined,
                         }}
                       />
                     )}
@@ -2278,9 +2302,18 @@ export function EnergyMap() {
               stickersByView={stickerLib.stickersByView}
               onOpenChart={() => setChartOpen(true)}
               onOpenData={() => setDataPanelOpen(true)}
+              onOpenSavings={() => setSavingsModalOpen(true)}
             />
           )}
-          {!editMode && !filterHidden && <FilterPanel visible={visibleTypes} onChange={handleFilterChange} />}
+          {!editMode && !filterHidden && (
+            <FilterPanel
+              visible={visibleTypes}
+              onChange={handleFilterChange}
+              assets={visibleAssets}
+              onHover={setHighlight}
+              onSelect={(a) => { setHighlight(null); handleOpen(a); }}
+            />
+          )}
 
           {/* Zoom controls */}
           <div
@@ -2408,6 +2441,17 @@ export function EnergyMap() {
 
       {tableModalOpen && <TableModal onClose={() => setTableModalOpen(false)} />}
       {windModalOpen && <WindScenarioModal onClose={() => setWindModalOpen(false)} />}
+      <SavingsSummaryModal
+        open={savingsModalOpen}
+        onClose={() => setSavingsModalOpen(false)}
+        onSelectSite={(panelName, panelId) => {
+          setSavingsModalOpen(false);
+          setSelectedAsset(null);
+          setSelectedStickerId(null);
+          stickerLib.setInfoItem(assetToPanelItem({ id: panelId, name: panelName }));
+        }}
+      />
+
 
       {pendingMpan && (
         <AddMpanDialog

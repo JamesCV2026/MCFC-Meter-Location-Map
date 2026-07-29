@@ -63,6 +63,5 @@ export const ENABLED_TYPES: AssetType[] = [
   'inverter',
   'solar-panel',
   'substation',
-  'tower',
   'idno',
 ];

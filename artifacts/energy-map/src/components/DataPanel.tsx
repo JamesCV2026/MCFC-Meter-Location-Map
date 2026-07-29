@@ -544,22 +544,22 @@ export function DataPanel({ open, onToggle }: DataPanelProps) {
         onClick={onToggle}
         className={
           open
-            ? 'w-full flex items-center justify-between px-6 py-2.5 bg-gray-100 hover:bg-gray-200 transition-colors group'
+            ? 'w-full flex items-center justify-between px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 transition-colors group'
             : 'w-full flex items-center justify-between px-6 py-3.5 bg-emerald-500 hover:bg-emerald-400 transition-colors group animate-pulse-once'
         }
         aria-label={open ? 'Collapse data panel' : 'Expand data panel'}
       >
         <div className="flex items-center gap-3">
-          <span className={open ? 'text-xs font-bold text-gray-700 tracking-wide uppercase' : 'text-sm font-extrabold text-white tracking-wide uppercase'}>
+          <span className={open ? 'text-xs font-bold text-white tracking-wide uppercase' : 'text-sm font-extrabold text-white tracking-wide uppercase'}>
             Energy Data
           </span>
-          <span className={open ? 'text-[10px] text-gray-400 font-normal' : 'text-[11px] text-white/90 font-semibold'}>
+          <span className={open ? 'text-[10px] text-white/90 font-normal' : 'text-[11px] text-white/90 font-semibold'}>
             {open
               ? 'Consumption & Generation summary. Click any site to view its half-hourly data.'
               : 'Click to open Consumption & Generation summary'}
           </span>
         </div>
-        <div className={open ? 'flex items-center gap-1 text-gray-600' : 'flex items-center gap-2 text-white font-bold text-xs uppercase tracking-wide'}>
+        <div className={open ? 'flex items-center gap-1 text-white' : 'flex items-center gap-2 text-white font-bold text-xs uppercase tracking-wide'}>
           {!open && <span className="hidden sm:inline">Open</span>}
           {open ? <ChevronDown size={22} strokeWidth={2.5} /> : <ChevronUp size={26} strokeWidth={3} className="animate-bounce" />}
         </div>

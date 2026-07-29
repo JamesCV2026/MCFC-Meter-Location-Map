@@ -149,22 +149,22 @@ export function SiteLabel({ site, mapRef, onClick, onUpdate, active = false, lab
         /* ── Pin style (default) — full pill with map-pin icon + zoom chevron */
         <button
           onClick={() => onClick(site)}
-          className={`group flex items-center gap-1.5 backdrop-blur-sm border rounded-lg px-2.5 py-1.5 shadow-md transition-all duration-150 cursor-pointer whitespace-nowrap ${
+          className={`group flex items-center gap-1.5 border rounded-lg px-2.5 py-1.5 shadow-sm transition-all duration-150 cursor-pointer whitespace-nowrap ${
             active
-              ? 'bg-blue-600 border-blue-700 text-white shadow-lg shadow-blue-200'
-              : 'bg-white/90 border-gray-200 hover:bg-white hover:border-blue-300 hover:shadow-lg'
+              ? 'bg-emerald-700 border-emerald-800 text-white shadow-md'
+              : 'bg-emerald-600 border-emerald-700 text-white hover:bg-emerald-500'
           }`}
           aria-label={active ? `Zoom out from ${site.name}` : `Zoom to ${site.name}`}
         >
-          <MapPin size={11} className={active ? 'text-blue-200 shrink-0' : 'text-blue-500 shrink-0'} />
-          <span className={`text-[11px] font-semibold leading-none ${active ? 'text-white' : 'text-gray-800'}`}>
+          <MapPin size={11} className="text-white/90 shrink-0" />
+          <span className="text-[11px] font-semibold leading-none text-white">
             {site.name}
           </span>
           {site.subMapId
-            ? <ArrowRight size={10} className={active ? 'text-blue-200 shrink-0 ml-0.5' : 'text-gray-400 group-hover:text-blue-500 transition-colors shrink-0 ml-0.5'} />
+            ? <ArrowRight size={10} className="text-white/80 group-hover:text-white transition-colors shrink-0 ml-0.5" />
             : active
-              ? <ZoomOut size={10} className="text-blue-200 shrink-0 ml-0.5" />
-              : <ZoomIn size={10} className="text-gray-400 group-hover:text-blue-500 transition-colors shrink-0 ml-0.5" />
+              ? <ZoomOut size={10} className="text-white/80 shrink-0 ml-0.5" />
+              : <ZoomIn size={10} className="text-white/80 group-hover:text-white transition-colors shrink-0 ml-0.5" />
           }
         </button>
       )}

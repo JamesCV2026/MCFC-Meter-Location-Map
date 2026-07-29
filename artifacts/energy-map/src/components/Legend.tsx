@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BarChart3, Table } from 'lucide-react';
+import { BarChart3, Table, PoundSterling } from 'lucide-react';
 import { submaps } from '@/data/submaps';
 import { ETIHAD_SITES } from '@/data/etihadSites';
 import { CFA_SITES } from '@/data/cfaSites';
@@ -23,13 +23,15 @@ interface LegendProps {
   // Optional "Energy data" trigger — opens the bottom data drawer from the
   // same top-left footer, next to the chart button.
   onOpenData?: () => void;
+  // Optional "Savings" trigger — opens the 25-year savings summary modal.
+  onOpenSavings?: () => void;
 }
 
 // Campus asset legend — lists every placed asset, grouped by sub-map area
 // (Etihad Stadium / City Football Academy / Co-op Live). In the editor, click
 // any entry to rename it; the new name applies everywhere that asset shows
 // (its info panel too). The published view-only build is read-only.
-export function Legend({ stickersByView, onOpenChart, onOpenData }: LegendProps) {
+export function Legend({ stickersByView, onOpenChart, onOpenData, onOpenSavings }: LegendProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const overrides = loadAllPanelInfo();
@@ -128,6 +130,18 @@ export function Legend({ stickersByView, onOpenChart, onOpenData }: LegendProps)
         >
           <Table size={14} className="shrink-0" />
           Energy data ↗
+        </button>
+      )}
+      {onOpenSavings && (
+        <button
+          type="button"
+          data-testid="btn-open-savings"
+          onClick={onOpenSavings}
+          className="shrink-0 border-t border-blue-700/30 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs px-3 py-2.5 flex items-center justify-center gap-1.5 transition-colors"
+          title="Open the 25-year savings summary across all solar assets."
+        >
+          <PoundSterling size={14} className="shrink-0" />
+          Savings ↗
         </button>
       )}
     </div>

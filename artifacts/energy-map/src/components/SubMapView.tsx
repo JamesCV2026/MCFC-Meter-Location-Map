@@ -15,7 +15,7 @@ import { StickerOverlay } from './StickerOverlay';
 import { StickerPicker } from './StickerPicker';
 import { AssetInfoPanel } from './AssetInfoPanel';
 import { useStickerLibrary, stickerToPanelItem } from '@/data/stickerLibrary';
-import { FilterPanel } from './FilterPanel';
+import { FilterPanel, HighlightTarget } from './FilterPanel';
 import { Legend } from './Legend';
 import { ServicesDuctOverlay } from './ServicesDuctOverlay';
 import { VIEW_ONLY } from '@/viewOnly';
@@ -174,6 +174,9 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
 
   // Asset-type filter + sticker/label visibility — mirrors the main overview map.
   const [visibleTypes, setVisibleTypes] = useState<Set<AssetType>>(() => new Set(ENABLED_TYPES));
+  // Infrastructure index highlight — hovering a group/item in the FilterPanel
+  // lights up the matching markers (and dims the rest).
+  const [highlight, setHighlight] = useState<HighlightTarget | null>(null);
   const [stickersHidden, setStickersHidden] = useState(false);
   // Top layer (z > markers) where every sticker portals its name label, so
   // labels are never hidden behind a nearby marker icon.
@@ -1349,6 +1352,12 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
             const TypeIcon = meta.Icon;
             // IDNO markers keep their real icon but take the IDNO colour.
             const markerColor = asset.idno ? assetTypeConfig['idno'].color : meta.color;
+            // Infrastructure-index highlight: does this marker match what the
+            // FilterPanel is hovering (a whole type, or one specific asset)?
+            const matchesHighlight = highlight
+              ? (highlight.id ? highlight.id === asset.id : highlight.type === (asset.idno ? 'idno' : asset.type))
+              : false;
+            const dimmed = highlight != null && !matchesHighlight;
             // Building markers render a little larger so they stand out;
             // wind turbines larger still, so the spinning-blade animation reads.
             // Wind turbines render as a refined white silhouette with a
@@ -1375,9 +1384,11 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
                   // Hovered/dragging markers lift above the sticker labels
                   // layer (z 25) so their tooltip isn't covered by a nearby
                   // building name.
-                  zIndex: isHovered || isDragging ? 35 : 20,
+                  zIndex: (isHovered || isDragging || matchesHighlight) ? 35 : 20,
                   cursor: editMode ? 'grab' : 'pointer',
                   userSelect: 'none',
+                  opacity: dimmed ? 0.35 : 1,
+                  transition: 'opacity 0.15s ease',
                   // In cable-edit mode the cable layer sits above markers and
                   // owns every click, so markers must not intercept events.
                   pointerEvents: cableEditMode ? 'none' : undefined,
@@ -1402,9 +1413,12 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
                         color: markerColor,
                         background: markerColor,
                         border: `2px solid ${editMode ? '#fbbf24' : 'white'}`,
+                        transition: 'box-shadow 0.15s ease',
                         boxShadow: editMode
                           ? '0 0 0 3px rgba(251,191,36,0.4), 0 2px 8px rgba(0,0,0,0.4)'
-                          : undefined,
+                          : matchesHighlight
+                            ? `0 0 0 3px white, 0 0 9px 2px ${markerColor}`
+                            : undefined,
                       }}
                     />
                   )}
@@ -1506,7 +1520,16 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
             className="absolute top-3 right-3 z-20 flex flex-col gap-2 w-[180px]"
             onClick={(e) => e.stopPropagation()}
           >
-            {!filterHidden && <FilterPanel embedded visible={visibleTypes} onChange={handleFilterChange} />}
+            {!filterHidden && (
+              <FilterPanel
+                embedded
+                visible={visibleTypes}
+                onChange={handleFilterChange}
+                assets={assets.filter((a) => visibleTypes.has(a.idno ? 'idno' : a.type))}
+                onHover={setHighlight}
+                onSelect={(a) => { setHighlight(null); handleOpen(a); }}
+              />
+            )}
             {subMapId === 'cfa-map' && (
               <div
                 data-testid="services-duct-legend"

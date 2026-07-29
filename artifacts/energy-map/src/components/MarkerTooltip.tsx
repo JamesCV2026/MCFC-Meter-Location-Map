@@ -95,9 +95,9 @@ export function MarkerTooltip({ asset, onViewData, onDelete, flipDown = false, h
             {showStatus && (
               <span
                 data-testid={`status-badge-${asset.id}`}
-                className={`ml-auto text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${status === 'built' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300 border border-dashed border-amber-400/60'}`}
+                className={`ml-auto text-[8px] font-semibold uppercase tracking-tight whitespace-nowrap px-1.5 py-[1px] rounded-full ${status === 'built' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}
               >
-                {status === 'built' ? 'Built' : 'Under Construction'}
+                {status === 'built' ? 'Built' : 'In build'}
               </span>
             )}
           </div>
@@ -113,13 +113,13 @@ export function MarkerTooltip({ asset, onViewData, onDelete, flipDown = false, h
                   <button
                     data-testid={`status-built-${asset.id}`}
                     onClick={(e) => { e.stopPropagation(); changeStatus('built'); }}
-                    className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-colors ${status === 'built' ? 'bg-emerald-500 text-white' : 'text-gray-400 hover:text-white'}`}
+                    className={`px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap transition-colors ${status === 'built' ? 'bg-emerald-500 text-white' : 'text-gray-400 hover:text-white'}`}
                   >Built</button>
                   <button
                     data-testid={`status-proposed-${asset.id}`}
                     onClick={(e) => { e.stopPropagation(); changeStatus('proposed'); }}
-                    className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-colors ${status === 'proposed' ? 'bg-amber-500 text-white' : 'text-gray-400 hover:text-white'}`}
-                  >Under Construction</button>
+                    className={`px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap transition-colors ${status === 'proposed' ? 'bg-amber-500 text-white' : 'text-gray-400 hover:text-white'}`}
+                  >In build</button>
                 </span>
               </div>
             )}

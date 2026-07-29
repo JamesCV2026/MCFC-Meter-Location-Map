@@ -263,7 +263,7 @@ export function SidePanel({ asset, onClose, onDelete, hideDelete = false }: Side
                     <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Status</span>
                     {VIEW_ONLY ? (
                       <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${status === 'built' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700 border border-dashed border-amber-400'}`}>
-                        {status === 'built' ? 'Built' : 'Under Construction'}
+                        {status === 'built' ? 'Built' : 'In build'}
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
@@ -276,7 +276,7 @@ export function SidePanel({ asset, onClose, onDelete, hideDelete = false }: Side
                           data-testid="side-panel-status-proposed"
                           onClick={() => changeStatus('proposed')}
                           className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${status === 'proposed' ? 'bg-amber-500 text-white' : 'text-gray-500 hover:text-gray-800'}`}
-                        >Under Construction</button>
+                        >In build</button>
                       </span>
                     )}
                   </div>

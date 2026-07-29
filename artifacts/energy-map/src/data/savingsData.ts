@@ -8,6 +8,9 @@ export interface AssetSavings {
 
 export const SAVINGS_METHODOLOGY = `We take the amount of solar electricity the site will generate each year, work out how much of that is used on site and how much is exported, and then compare the cost of buying that electricity under the PPA against what the same electricity would cost from the grid. The difference is the saving. We run that comparison year by year across the full 25-year term, allowing for the PPA price rising 3% a year while grid prices rise 8% a year. The figures below show the result for each site and for the portfolio as a whole.`;
 
+// One-line version for tight spaces (e.g. the summary panel headline).
+export const SAVINGS_METHODOLOGY_BRIEF = `The saving is the gap between the site's solar electricity under the PPA and the same power bought from the grid, projected year by year over 25 years (PPA +3%/yr vs grid +8%/yr).`;
+
 export const SAVINGS_METHODOLOGY_FULL = `This analysis was produced using Clearvolt's in-house solar PPA financial modelling tool, built in Python specifically for long-term solar savings projections. Generation data varies by phase: Phase 1 (Joie Stadium, Indoor Pitch, TV Studio, FM Building) uses actual metered generation data, while Phase 2 (Ground Mount, Womens) and Phase 3 (Hotel, Commercial, Towers) use modelled generation profiles. For each site, generation is split between on-site consumption (90% for Phase 1/2, 100% for Phase 3) and any exported surplus, then projected over the full 25-year PPA term with the PPA rate (15.5p/kWh) escalating 3% annually against a grid rate (21.8p/kWh) escalating 8% annually. Annual savings reflect the value of grid electricity avoided plus export income, less the PPA cost, giving a year-by-year and cumulative savings position for each site and the portfolio.`;
 
 const SAVINGS: Record<string, number[]> = {
@@ -56,3 +59,49 @@ export function savingsForName(name: string): AssetSavings | undefined {
 export function savingsTotal(s: AssetSavings): number {
   return s.years.reduce((a, b) => a + (b || 0), 0);
 }
+
+// ── Portfolio savings summary ───────────────────────────────────────────────
+// A flat, display-ready breakdown of the 25-year total savings per asset,
+// grouped by delivery phase (Phase 1 = actual metered, Phase 2/3 = modelled),
+// for the Savings Summary modal. Mirrors the generation breakdown in DataPanel.
+export interface SavingsSummaryRow {
+  key: string;
+  name: string;       // display label in the summary table
+  panelName: string;  // resolves the site panel (energy/savings by name)
+  panelId: string;    // id for the panel's photo / stored overrides
+  phase: 1 | 2 | 3;
+  actual: boolean;    // Phase 1 uses actual metered generation; 2/3 modelled
+  total: number;      // 25-year total savings (£)
+}
+
+export const SAVINGS_SUMMARY: SavingsSummaryRow[] = ([
+  { key: 'joie-stadium',  name: 'Joie Stadium',                phase: 1, panelName: 'Joie Stadium',      panelId: 'cfa-site-joie-stadium' },
+  { key: 'indoor-pitch',  name: 'Indoor Pitch (Perf. Centre)', phase: 1, panelName: 'Indoor Pitch',      panelId: 'cfa-site-indoor-pitch' },
+  { key: 'fm-building',   name: 'FM Building',                 phase: 1, panelName: 'FM Building',       panelId: 'cfa-site-fm-building' },
+  { key: 'tv-studio',     name: 'TV Studio',                   phase: 1, panelName: 'TV Studio',         panelId: 'cfa-site-tv-studio' },
+  { key: 'ground-mount',  name: 'Ground Mount (Phase 2A)',     phase: 2, panelName: 'Ground Mount',      panelId: 'ground-mount-2a' },
+  { key: 'womens',        name: "Women's Facility (MCWFC)",    phase: 2, panelName: "Women's Facility",  panelId: 'cfa-site-womens-facility' },
+  { key: 'hotel',         name: 'Hotel',                       phase: 3, panelName: 'Hotel',             panelId: 'etihad-site-hotel' },
+  { key: 'commercial',    name: 'Commercial',                  phase: 3, panelName: 'Commercial',        panelId: 'etihad-site-commercial' },
+  { key: 'towers',        name: 'Etihad Towers',               phase: 3, panelName: 'Etihad Towers',     panelId: 'etihad-site-towers' },
+] as Array<Omit<SavingsSummaryRow, 'actual' | 'total'>>).map((r) => ({
+  ...r,
+  actual: r.phase === 1,
+  total: (SAVINGS[r.key] ?? []).reduce((a, b) => a + (b || 0), 0),
+}));
+
+export const SAVINGS_GRAND_TOTAL = SAVINGS_SUMMARY.reduce((s, r) => s + r.total, 0);
+
+// Portfolio savings year by year: annual (all assets summed) + running cumulative.
+export interface PortfolioSavingsYear { year: number; annual: number; cumulative: number; }
+export const SAVINGS_PORTFOLIO_YEARS: PortfolioSavingsYear[] = (() => {
+  const nYears = Math.max(0, ...SAVINGS_SUMMARY.map((r) => (SAVINGS[r.key] ?? []).length));
+  const out: PortfolioSavingsYear[] = [];
+  let cumulative = 0;
+  for (let i = 0; i < nYears; i++) {
+    const annual = SAVINGS_SUMMARY.reduce((s, r) => s + ((SAVINGS[r.key] ?? [])[i] || 0), 0);
+    cumulative += annual;
+    out.push({ year: i + 1, annual, cumulative });
+  }
+  return out;
+})();
