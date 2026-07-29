@@ -1862,8 +1862,12 @@ export function EnergyMap() {
           the data panel is opened, its own body scrolls internally. */}
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
       <main
-        className={dataPanelOpen ? 'hidden' : 'flex-1 min-h-0 flex overflow-hidden'}
+        className={dataPanelOpen ? 'hidden' : 'flex-1 min-h-0 flex items-center justify-center overflow-hidden bg-gray-100'}
       >
+        {/* Columns wrapped in a block that sizes to the map's own height, so the
+            side panels reach exactly the map's bottom edge — no white band under
+            the map. The block is centred in the available area. */}
+        <div data-testid="overview-row" className="flex items-stretch w-full max-h-full">
         {/* ── LEFT dashboard column (off the map): Assets list + view toggles ── */}
         {!editMode && (
           <aside data-testid="left-dashboard" className="hidden xs:flex flex-col gap-3 flex-1 min-w-[190px] overflow-hidden bg-slate-50 border-r border-gray-200 p-3">
@@ -1904,7 +1908,7 @@ export function EnergyMap() {
         {/* ── CENTER — the map itself. shrink-0 so this column hugs the 16:9
              map exactly; the side dashboards (flex-1) then absorb ALL the
              left-over width, so there's no grey letterbox around the map. ── */}
-        <div className="shrink-0 max-w-full lg:max-w-[calc(100%_-_560px)] h-full flex items-center justify-center overflow-hidden relative">
+        <div className="shrink-0 w-full lg:w-[calc(100%_-_560px)] flex items-center justify-center overflow-hidden relative">
         <div
           data-testid="map-container"
           ref={mapRef}
@@ -1925,8 +1929,7 @@ export function EnergyMap() {
           //   maxWidth: 100% → shrinks if it would overflow horizontally
           style={{
             aspectRatio: '16 / 9',
-            height: '100%',
-            maxWidth: '100%',
+            width: '100%',
             maxHeight: '100%',
           }}
           onClick={handleMapClick}
@@ -2447,6 +2450,7 @@ export function EnergyMap() {
             />
           </aside>
         )}
+        </div>
       </main>
 
       <DataPanel open={dataPanelOpen} onToggle={() => setDataPanelOpen((v) => !v)} />

@@ -71,7 +71,7 @@ export function FilterPanel({ visible, onChange, embedded = false, assets, onHov
         onMouseLeave={() => onHover!(null)}
         className="flex-1 min-h-0 w-full flex flex-col"
       >
-        <p className="shrink-0 text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3 leading-none">
+        <p className="shrink-0 text-[13px] font-bold text-gray-700 uppercase tracking-wide mb-2 leading-none">
           Infrastructure Index
         </p>
         <div className="flex-1 min-h-0 overflow-y-auto pr-0.5 flex flex-col gap-2">

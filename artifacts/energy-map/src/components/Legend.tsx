@@ -79,14 +79,22 @@ export function Legend({ stickersByView, onOpenChart, onOpenData, onOpenSavings,
       // flex column so the assets list can scroll internally while the
       // "View as chart" footer stays pinned at the bottom.
       className={embedded
-        ? 'flex-1 flex flex-col w-full bg-white rounded-lg border border-gray-200 shadow-sm text-[10px] sm:text-xs overflow-hidden min-h-0'
+        ? 'flex-1 flex flex-col w-full min-h-0'
         : 'hidden xs:flex flex-col absolute top-3 left-3 z-20 bg-white/95 backdrop-blur-sm rounded-lg border border-gray-200 shadow-lg min-w-[140px] sm:min-w-[170px] max-w-[180px] sm:max-w-[230px] max-h-[78%] text-[10px] sm:text-xs overflow-hidden'}
     >
+      {/* Embedded: the "Assets" title sits OUTSIDE the card (matching the
+          Infrastructure Index), and the list + footer live inside the card. */}
+      {embedded && (
+        <p className="shrink-0 text-[13px] font-bold text-gray-700 uppercase tracking-wide mb-2 leading-none">Assets</p>
+      )}
+      <div className={embedded
+        ? 'flex-1 min-h-0 flex flex-col bg-white rounded-lg border border-gray-200 shadow-sm text-[10px] sm:text-xs overflow-hidden'
+        : 'contents'}>
       <div className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-3">
-      <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2 leading-none">
-        Assets
-      </p>
-      <div className="space-y-2.5">
+      {!embedded && (
+        <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2 leading-none">Assets</p>
+      )}
+      <div className={embedded ? 'flex flex-col justify-between min-h-full gap-4' : 'space-y-2.5'}>
         {submaps.filter((sm) => !onlySubmap || sm.id === onlySubmap).map((sm) => {
           const baseSites = SITES_BY_SUBMAP[sm.id] ?? (stickersByView[sm.id] ?? []);
           const baseIds = new Set(baseSites.map((s) => s.id));
@@ -106,7 +114,7 @@ export function Legend({ stickersByView, onOpenChart, onOpenData, onOpenSavings,
               : a.label.localeCompare(b.label));
           return (
             <div key={sm.id}>
-              <p className="text-[11px] font-bold text-gray-800 mb-1 leading-tight">
+              <p className="text-[13px] font-bold text-gray-800 mb-2 pb-1 border-b-2 border-gray-200 leading-tight">
                 {sm.name}
               </p>
               {items.length > 0 ? (
@@ -220,7 +228,7 @@ export function Legend({ stickersByView, onOpenChart, onOpenData, onOpenSavings,
           type="button"
           data-testid="btn-open-chart"
           onClick={onOpenChart}
-          className="shrink-0 border-t border-emerald-700/30 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3 py-2.5 flex items-center justify-center gap-1.5 transition-colors"
+          className="shrink-0 border-t border-amber-600/30 bg-amber-500 hover:bg-amber-400 text-white font-bold text-xs px-3 py-2.5 flex items-center justify-center gap-1.5 transition-colors"
           title="View the consumption vs generation breakdown as a stacked bar chart."
         >
           <BarChart3 size={14} className="shrink-0" />
@@ -251,6 +259,7 @@ export function Legend({ stickersByView, onOpenChart, onOpenData, onOpenSavings,
           Savings ↗
         </button>
       )}
+      </div>
     </div>
   );
 }
