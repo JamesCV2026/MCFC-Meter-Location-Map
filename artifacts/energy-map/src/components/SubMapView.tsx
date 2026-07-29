@@ -14,7 +14,7 @@ import { AddLabelDialog } from './AddLabelDialog';
 import { StickerOverlay } from './StickerOverlay';
 import { StickerPicker } from './StickerPicker';
 import { AssetInfoPanel } from './AssetInfoPanel';
-import { useStickerLibrary, stickerToPanelItem } from '@/data/stickerLibrary';
+import { useStickerLibrary, stickerToPanelItem, assetToPanelItem } from '@/data/stickerLibrary';
 import { FilterPanel, HighlightTarget } from './FilterPanel';
 import { groupsForSubmap } from '@/data/siteAssetGroups';
 import { Legend } from './Legend';
@@ -1154,6 +1154,7 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
                 siteAssets={siteAssetsIndex}
                 onHoverAsset={setHighlight}
                 onSelectAsset={(a) => { setHighlight(null); handleOpen(a); }}
+                onSelectSite={(site) => { setHighlight(null); setSelectedAsset(null); stickerLib.setInfoItem(assetToPanelItem(site)); }}
               />
             )}
             <div className="flex flex-col bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden text-xs font-semibold text-gray-700 shrink-0">
@@ -1605,7 +1606,7 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
                 embedded
                 visible={visibleTypes}
                 onChange={handleFilterChange}
-                assets={assets.filter((a) => visibleTypes.has(a.idno ? 'idno' : a.type))}
+                assets={assets}
                 onHover={setHighlight}
                 onSelect={(a) => { setHighlight(null); handleOpen(a); }}
               />

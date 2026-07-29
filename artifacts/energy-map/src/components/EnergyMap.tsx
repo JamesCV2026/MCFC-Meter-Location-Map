@@ -1481,7 +1481,7 @@ export function EnergyMap() {
         </button>
         <div className="h-5 w-px bg-gray-200 mx-1" />
         */}
-        <div className="flex items-center gap-4 text-xs text-gray-500">
+        <div className={`flex items-center gap-2 text-xs text-gray-500 ${VIEW_ONLY ? 'ml-auto' : ''}`}>
           {/* Wind Scenario button removed for the Meter map (2026-07). Uncomment to restore.
           <button
             onClick={() => setWindModalOpen(true)}
@@ -1497,11 +1497,11 @@ export function EnergyMap() {
             Wind Scenario
           </button>
           */}
-          <span data-testid="asset-count">
-            <span className="font-semibold text-gray-800">{registeredAssets.length}</span> assets registered
+          <span data-testid="asset-count" className="px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
+            <span className="font-bold text-gray-900">{registeredAssets.length}</span> registered
           </span>
-          <span>
-            <span className="font-semibold text-gray-800">{visibleAssets.length}</span> visible
+          <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+            <span className="font-bold">{visibleAssets.length}</span> visible
           </span>
           {zoomedSite && (
             <span className="text-blue-600 font-semibold flex items-center gap-1">
@@ -2444,7 +2444,7 @@ export function EnergyMap() {
               embedded
               visible={visibleTypes}
               onChange={handleFilterChange}
-              assets={visibleAssets}
+              assets={registeredAssets}
               onHover={setHighlight}
               onSelect={(a) => { setHighlight(null); handleOpen(a); }}
             />

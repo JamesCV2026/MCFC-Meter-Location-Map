@@ -94,7 +94,7 @@ export function Legend({ stickersByView, onOpenChart, onOpenData, onOpenSavings,
       {!embedded && (
         <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-2 leading-none">Assets</p>
       )}
-      <div className={embedded ? 'flex flex-col justify-between min-h-full gap-4' : 'space-y-2.5'}>
+      <div className={embedded ? 'flex flex-col gap-8' : 'space-y-2.5'}>
         {submaps.filter((sm) => !onlySubmap || sm.id === onlySubmap).map((sm) => {
           const baseSites = SITES_BY_SUBMAP[sm.id] ?? (stickersByView[sm.id] ?? []);
           const baseIds = new Set(baseSites.map((s) => s.id));
