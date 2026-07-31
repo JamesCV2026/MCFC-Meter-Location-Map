@@ -105,7 +105,11 @@ export function FilterPanel({ visible, onChange, embedded = false, assets, onHov
               <div
                 key={type}
                 className={`flex flex-col rounded-xl border border-gray-200 bg-white overflow-hidden transition-colors ${isExp ? 'flex-[3] min-h-[150px]' : 'flex-1 min-h-[60px] justify-center hover:bg-gray-50'}`}
-                onMouseEnter={() => { if (checked) onHover!({ type }); }}
+                // onMouseOver (not onMouseEnter) so the highlight re-registers
+                // wherever the pointer re-enters the card — including after a
+                // layout shift under a stationary cursor, which was making the
+                // arrows only appear when approaching from the side.
+                onMouseOver={() => { if (checked) onHover!({ type }); }}
                 onMouseLeave={() => onHover!(null)}
               >
                 <div className="flex items-center gap-3 px-4 py-3.5">
@@ -152,7 +156,10 @@ export function FilterPanel({ visible, onChange, embedded = false, assets, onHov
                         <button
                           type="button"
                           data-testid={`index-item-${a.id}`}
-                          onMouseEnter={() => onHover!({ id: a.id })}
+                          // stopPropagation so this single-asset highlight isn't
+                          // immediately overwritten by the card's onMouseOver
+                          // (which highlights the whole type).
+                          onMouseOver={(e) => { e.stopPropagation(); onHover!({ id: a.id }); }}
                           onMouseLeave={() => onHover!(null)}
                           onClick={() => onSelect?.(a)}
                           className="w-full text-left text-[13px] text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md px-2 py-1.5 truncate transition-colors"

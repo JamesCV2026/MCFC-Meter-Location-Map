@@ -22,6 +22,7 @@ import { groupsForSubmap } from '@/data/siteAssetGroups';
 import { Legend } from './Legend';
 import { ServicesDuctOverlay } from './ServicesDuctOverlay';
 import { VIEW_ONLY } from '@/viewOnly';
+import clearvoltLogo from '@/assets/clearvolt-logo.png';
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 4;
@@ -884,7 +885,9 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
           <span className="font-semibold text-gray-700">{assets.length}</span> markers
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-3">
+          {/* Clearvolt brand mark — far right of the sub-map header. */}
+          <img src={clearvoltLogo} alt="Clearvolt" className="h-7 w-auto object-contain shrink-0 order-last ml-1" />
           {!editMode && !addMpanMode && !addLabelMode && !labelEditMode && !cableMode && !cableEditMode && !stickerLib.stickerEditMode && !VIEW_ONLY && (
             <button
               onClick={() => { setAddMpanMode(true); setEditMode(false); setLocked(false); setSelectedAsset(null); }}
@@ -973,13 +976,15 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
             </button>
           )}
 
-          {/* Edit labels button — only when labels exist */}
-          {!editMode && !addMpanMode && !addLabelMode && !labelEditMode && !cableMode && !cableEditMode && userLabels.length > 0 && !VIEW_ONLY && (
+          {/* Move labels — always available: even with no user-added labels
+              there are sticker name labels (Joie Stadium, TV Studio…) to drag. */}
+          {!editMode && !addMpanMode && !addLabelMode && !labelEditMode && !cableMode && !cableEditMode && !VIEW_ONLY && (
             <button
+              data-testid="btn-submap-move-labels"
               onClick={() => setLabelEditMode(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
             >
-              Edit labels
+              Move labels
             </button>
           )}
 

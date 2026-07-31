@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { MapPin, ArrowRight, ZoomIn, ZoomOut, GripHorizontal, Pencil, Check, MousePointerClick } from 'lucide-react';
 import { Site } from '@/data/sites';
+import { labelOffsetFor, saveLabelOffset, LabelOffset } from '@/data/stickerLabelOffsets';
 
 interface SiteLabelProps {
   site: Site;
@@ -18,6 +19,46 @@ export function SiteLabel({ site, mapRef, onClick, onUpdate, active = false, lab
   const [draftName, setDraftName] = useState(site.name);
   const inputRef = useRef<HTMLInputElement>(null);
   const dragState = useRef<{ startMouseX: number; startMouseY: number; startX: number; startY: number; moved: boolean } | null>(null);
+
+  // The "Click to explore" hint is positioned independently of the pill, so it
+  // can be dragged clear of roads/markers. Stored under a `hint:` key.
+  const hintKey = `hint:${site.id}`;
+  const [hintOffset, setHintOffset] = useState<LabelOffset>(() => labelOffsetFor(hintKey));
+  useEffect(() => { setHintOffset(labelOffsetFor(hintKey)); }, [hintKey]);
+  const hintDrag = useRef<{ startX: number; startY: number; base: LabelOffset; moved: boolean } | null>(null);
+
+  const handleHintMouseDown = (e: React.MouseEvent) => {
+    if (!labelEditMode) return;
+    e.preventDefault();
+    e.stopPropagation();
+    hintDrag.current = { startX: e.clientX, startY: e.clientY, base: hintOffset, moved: false };
+  };
+
+  useEffect(() => {
+    if (!labelEditMode) return;
+    const onMove = (e: MouseEvent) => {
+      const d = hintDrag.current;
+      if (!d || !mapRef.current) return;
+      const rect = mapRef.current.getBoundingClientRect();
+      if (!rect.width) return;
+      d.moved = true;
+      setHintOffset({
+        dx: d.base.dx + ((e.clientX - d.startX) / rect.width) * 100 / zoom,
+        dy: d.base.dy + ((e.clientY - d.startY) / rect.height) * 100 / zoom,
+      });
+    };
+    const onUp = () => {
+      const d = hintDrag.current;
+      hintDrag.current = null;
+      if (d?.moved) setHintOffset((o) => { saveLabelOffset(hintKey, o); return o; });
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [labelEditMode, hintKey, zoom, mapRef]);
 
   // keep draft in sync when site.name changes externally
   useEffect(() => { setDraftName(site.name); }, [site.name]);
@@ -149,22 +190,22 @@ export function SiteLabel({ site, mapRef, onClick, onUpdate, active = false, lab
         /* ── Pin style (default) — full pill with map-pin icon + zoom chevron */
         <button
           onClick={() => onClick(site)}
-          className={`group flex items-center gap-1.5 border rounded-lg px-2.5 py-1.5 shadow-md transition-all duration-150 cursor-pointer whitespace-nowrap ${
+          className={`group flex items-center gap-1.5 border rounded-lg px-3 py-1.5 shadow-md transition-all duration-150 cursor-pointer whitespace-nowrap ${
             active
-              ? 'bg-emerald-700 border-emerald-800 text-white shadow-md'
-              : 'bg-emerald-600 border-emerald-700 text-white hover:bg-emerald-500'
+              ? 'bg-white border-emerald-500 text-gray-900 shadow-md'
+              : 'bg-white/95 border-gray-200 text-gray-800 hover:border-emerald-400'
           }`}
           aria-label={active ? `Zoom out from ${site.name}` : `Zoom to ${site.name}`}
         >
-          <MapPin size={12} className="text-white/90 shrink-0" />
-          <span className="text-[12px] font-bold leading-none text-white">
+          <MapPin size={13} className="text-emerald-600 shrink-0" />
+          <span className="text-[13px] font-bold leading-none text-gray-900">
             {site.name}
           </span>
           {site.subMapId
-            ? <ArrowRight size={11} className="text-white/80 group-hover:text-white transition-colors shrink-0 ml-0.5" />
+            ? <ArrowRight size={12} className="text-emerald-600 group-hover:text-emerald-700 transition-colors shrink-0 ml-0.5" />
             : active
-              ? <ZoomOut size={11} className="text-white/80 shrink-0 ml-0.5" />
-              : <ZoomIn size={11} className="text-white/80 group-hover:text-white transition-colors shrink-0 ml-0.5" />
+              ? <ZoomOut size={12} className="text-emerald-600 shrink-0 ml-0.5" />
+              : <ZoomIn size={12} className="text-emerald-600 group-hover:text-emerald-700 transition-colors shrink-0 ml-0.5" />
           }
         </button>
       )}
@@ -172,10 +213,35 @@ export function SiteLabel({ site, mapRef, onClick, onUpdate, active = false, lab
       {/* "Click to explore" hint — draws attention to the drill-in pills so
           users know the campus blobs are interactive. Only on non-edit,
           navigable (sub-map) pills that aren't already zoomed in. */}
-      {!labelEditMode && site.style !== 'tag' && site.subMapId && !active && (
-        <div className="hint-nudge absolute left-1/2 top-full mt-1 pointer-events-none flex items-center gap-1 whitespace-nowrap rounded-full bg-white/95 border border-emerald-200 px-2 py-0.5 shadow-md text-[10px] font-bold text-emerald-700">
-          <MousePointerClick size={11} className="text-emerald-600 shrink-0" />
-          Click to explore
+      {site.style !== 'tag' && site.subMapId && !active && (
+        <div
+          data-testid={`site-hint-${site.id}`}
+          onMouseDown={handleHintMouseDown}
+          className={`absolute ${labelEditMode ? '' : 'explore-float'}`}
+          style={{
+            left: `calc(50% + ${hintOffset.dx}%)`,
+            top: `calc(100% + ${hintOffset.dy}%)`,
+            transform: 'translateX(-50%)',
+            marginTop: 8,
+            pointerEvents: 'auto',
+            cursor: labelEditMode ? 'grab' : 'pointer',
+          }}
+        >
+          {/* Inner button carries the visuals + hover/press animation, so the
+              outer div is free to own the positioning + nudge transform. */}
+          <button
+            type="button"
+            onClick={(e) => { if (!labelEditMode) { e.stopPropagation(); onClick(site); } }}
+            className={`explore-pill relative overflow-hidden flex items-center gap-2 whitespace-nowrap rounded-full bg-emerald-500 border-2 border-white px-4 py-2 shadow-xl text-[16px] font-extrabold text-white ${labelEditMode ? 'ring-2 ring-offset-1 ring-indigo-400 cursor-grab' : 'cursor-pointer'}`}
+            aria-label={`Explore ${site.name}`}
+          >
+            <span className="relative flex items-center justify-center shrink-0" style={{ width: 19, height: 19 }}>
+              <span className="click-ripple absolute inset-0 rounded-full border-2 border-white" aria-hidden />
+              <MousePointerClick size={19} className="text-white shrink-0 click-tap relative" />
+            </span>
+            Click to explore
+            <span className="explore-sheen" aria-hidden />
+          </button>
         </div>
       )}
     </div>

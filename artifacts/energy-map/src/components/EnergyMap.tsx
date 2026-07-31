@@ -33,6 +33,7 @@ import { RegionBox } from './RegionBox';
 import { loadSubMapRegions, saveSubMapRegions, SubMapRegion } from '@/data/submapRegions';
 import mapImage from '@assets/Overview_1779198593346.png';
 import mcfcLogo from '@assets/images_(1)_1779205796102.png';
+import clearvoltLogo from '@/assets/clearvolt-logo.png';
 
 const STORAGE_KEY = 'energy-map-positions';
 const STICKER_STORAGE_KEY = 'energy-map-sticker-transforms';
@@ -367,23 +368,29 @@ export function EnergyMap() {
 
   // Restore the saved framing on load.
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       const raw = localStorage.getItem(FRAMING_KEY);
       const f = raw ? JSON.parse(raw) : null;
-      if (!f || typeof f.zoom !== 'number' || f.zoom <= 1) { framingLoaded.current = true; return; }
-      setMapZoom(f.zoom);
-      // Pan lands a beat later so the zoom-change clamp (which can measure a
-      // 0-width rect mid-layout) has already run and can't zero it.
-      const t = setTimeout(() => {
-        const el = mapRef.current;
-        if (el) {
-          const r = el.getBoundingClientRect();
-          if (r.width) setMapPan({ x: (f.fx ?? 0) * r.width, y: (f.fy ?? 0) * r.height });
-        }
+      if (!f || typeof f.zoom !== 'number' || f.zoom <= 1) {
         framingLoaded.current = true;
-      }, 150);
-      return () => clearTimeout(t);
-    } catch { framingLoaded.current = true; }
+      } else {
+        setMapZoom(f.zoom);
+        // Pan lands a beat later so the zoom-change clamp (which can measure a
+        // 0-width rect mid-layout) has already run and can't zero it.
+        timer = setTimeout(() => {
+          const el = mapRef.current;
+          if (el) {
+            const r = el.getBoundingClientRect();
+            if (r.width) setMapPan({ x: (f.fx ?? 0) * r.width, y: (f.fy ?? 0) * r.height });
+          }
+          framingLoaded.current = true;
+        }, 150);
+      }
+    } catch {
+      framingLoaded.current = true;
+    }
+    return () => { if (timer) clearTimeout(timer); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1579,12 +1586,8 @@ export function EnergyMap() {
             Wind Scenario
           </button>
           */}
-          <span data-testid="asset-count" className="px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
-            <span className="font-bold text-gray-900">{registeredAssets.length}</span> registered
-          </span>
-          <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
-            <span className="font-bold">{visibleAssets.length}</span> visible
-          </span>
+          {/* Asset count badges removed — they didn't add anything for the
+              viewer. The Infrastructure Index already shows per-type counts. */}
           {zoomedSite && (
             <span className="text-blue-600 font-semibold flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />
@@ -1593,7 +1596,9 @@ export function EnergyMap() {
           )}
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-3">
+          {/* Clearvolt brand mark — sits at the far right of the header. */}
+          <img src={clearvoltLogo} alt="Clearvolt" className="h-7 w-auto object-contain shrink-0 order-last ml-1" />
           {!editMode && !addMpanMode && !addLabelMode && !labelEditMode && !cableMode && !cableEditMode && !stickerLib.stickerEditMode && !regionMode && !VIEW_ONLY && (
             <button
               data-testid="btn-add-mpan"
@@ -1964,6 +1969,16 @@ export function EnergyMap() {
                 onHoverAsset={setHighlight}
                 onSelectAsset={(a) => { setHighlight(null); handleOpen(a); }}
                 onSelectSite={(site) => { setHighlight(null); stickerLib.setInfoItem(assetToPanelItem(site)); }}
+                onExploreSubmap={(submapId) => {
+                  setHighlight(null);
+                  setSelectedAsset(null);
+                  setSelectedStickerId(null);
+                  setHoveredId(null);
+                  stickerLib.setInfoItem(null);
+                  const s = siteState.find((st) => st.subMapId === submapId);
+                  setSubMapOrigin({ x: s?.x ?? 50, y: s?.y ?? 50 });
+                  setActiveSubMapId(submapId);
+                }}
               />
             )}
             <div className="flex flex-col bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden text-xs font-semibold text-gray-700 shrink-0">

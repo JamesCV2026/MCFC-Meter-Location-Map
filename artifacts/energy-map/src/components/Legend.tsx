@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BarChart3, Table, PoundSterling, ChevronRight } from 'lucide-react';
+import { BarChart3, Table, PoundSterling, ChevronRight, MousePointerClick } from 'lucide-react';
 import type { EnergyAsset, AssetType } from '@/data/assets';
 import { assetTypeConfig } from '@/data/assetTypes';
 import type { HighlightTarget } from './FilterPanel';
@@ -46,13 +46,15 @@ interface LegendProps {
   // Restrict the list to a single sub-map (used by the sub-map dashboards, so
   // each submap shows only its own sites/groups).
   onlySubmap?: string;
+  // Jump straight into a campus sub-map from its heading in the Assets list.
+  onExploreSubmap?: (submapId: string) => void;
 }
 
 // Campus asset legend — lists every placed asset, grouped by sub-map area
 // (Etihad Stadium / City Football Academy / Co-op Live). In the editor, click
 // any entry to rename it; the new name applies everywhere that asset shows
 // (its info panel too). The published view-only build is read-only.
-export function Legend({ stickersByView, onOpenChart, onOpenData, onOpenSavings, embedded = false, siteAssets, onHoverAsset, onSelectAsset, onSelectSite, onlySubmap }: LegendProps) {
+export function Legend({ stickersByView, onOpenChart, onOpenData, onOpenSavings, embedded = false, siteAssets, onHoverAsset, onSelectAsset, onSelectSite, onlySubmap, onExploreSubmap }: LegendProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [expandedSites, setExpandedSites] = useState<Set<string>>(new Set());
@@ -114,9 +116,23 @@ export function Legend({ stickersByView, onOpenChart, onOpenData, onOpenSavings,
               : a.label.localeCompare(b.label));
           return (
             <div key={sm.id}>
-              <p className="text-[13px] font-bold text-gray-800 mb-2 pb-1 border-b-2 border-gray-200 leading-tight">
-                {sm.name}
-              </p>
+              <div className="flex items-center gap-2 mb-2 pb-1 border-b-2 border-gray-200">
+                <p className="flex-1 min-w-0 text-[13px] font-bold text-gray-800 leading-tight truncate">
+                  {sm.name}
+                </p>
+                {onExploreSubmap && (
+                  <button
+                    type="button"
+                    data-testid={`legend-explore-${sm.id}`}
+                    onClick={() => onExploreSubmap(sm.id)}
+                    title={`Open the ${sm.name} map`}
+                    className="shrink-0 flex items-center gap-1 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white text-[10px] font-bold px-2 py-1 shadow-sm transition-colors"
+                  >
+                    <MousePointerClick size={11} className="shrink-0" />
+                    Click to explore
+                  </button>
+                )}
+              </div>
               {items.length > 0 ? (
                 <ul className="space-y-0.5 pl-2 border-l border-gray-200">
                   {items.map((it) => {

@@ -317,8 +317,8 @@ export function SidePanel({ asset, onClose, onDelete, hideDelete = false }: Side
                   if (!cols.length) {
                     return (
                       <div data-testid="inverter-gen" className="mb-6 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-center">
-                        <p className="text-sm font-medium text-gray-500">No inverter columns mapped yet</p>
-                        <p className="text-xs text-gray-400 mt-1">Tell me which roof columns feed this inverter and I'll wire them in.</p>
+                        <p className="text-sm font-medium text-gray-500">No metered generation data available</p>
+                        <p className="text-xs text-gray-400 mt-1">No actual generation data was available for this asset at the time this map was produced, so the figures are intentionally left blank.</p>
                       </div>
                     );
                   }

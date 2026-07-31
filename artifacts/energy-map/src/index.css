@@ -254,3 +254,81 @@
 @media (prefers-reduced-motion: reduce) {
   .marker-arrow-in { animation: none; }
 }
+
+/* Cursor icon inside "Click to explore" — the click itself keeps its snappy
+   ~0.6s motion, but only fires once every 7s so it draws the eye occasionally
+   instead of nagging. */
+@keyframes click-tap {
+  0%, 88%, 100% { transform: scale(1) rotate(0deg); }
+  90.5%         { transform: scale(0.6) rotate(-8deg); }
+  93%           { transform: scale(1.35) rotate(5deg); }
+  95%           { transform: scale(0.92) rotate(0deg); }
+  96.5%         { transform: scale(1.08); }
+}
+.click-tap {
+  animation: click-tap 7s ease-in-out infinite;
+  transform-origin: center;
+}
+
+/* Ripple fires out of the cursor on the same beat as the click. */
+@keyframes click-ripple {
+  0%, 89%   { transform: scale(0.3); opacity: 0; }
+  92%       { transform: scale(0.6); opacity: 0.7; }
+  99%, 100% { transform: scale(2); opacity: 0; }
+}
+.click-ripple {
+  animation: click-ripple 7s ease-out infinite;
+}
+
+/* The pill itself: lifts and brightens on hover, presses in on click. */
+.explore-pill {
+  transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), filter 0.16s ease, box-shadow 0.16s ease;
+}
+.explore-pill:hover {
+  transform: scale(1.08);
+  filter: brightness(1.08) saturate(1.05);
+}
+.explore-pill:active {
+  transform: scale(0.94);
+  filter: brightness(0.96);
+}
+
+/* Sheen sweep — soft, slow (~1.4s travel) and only every 10s. On hover it
+   picks up so the button still feels responsive under the cursor. */
+.explore-sheen {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 45%;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.38), transparent);
+  transform: translateX(-160%) skewX(-18deg);
+  animation: explore-sheen 10s linear infinite;
+}
+@keyframes explore-sheen {
+  0%        { transform: translateX(-160%) skewX(-18deg); }
+  14%, 100% { transform: translateX(320%) skewX(-18deg); }
+}
+.explore-pill:hover .explore-sheen {
+  animation-duration: 3s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .click-tap, .click-ripple, .explore-sheen { animation: none; }
+  .explore-sheen { opacity: 0; }
+}
+
+/* Barely-there float on the "Click to explore" pill — 2px over 4s, just
+   enough life to catch the eye without ever reading as a bounce. Keeps the
+   -50% x-centring from the inline transform. */
+@keyframes explore-float {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%      { transform: translateX(-50%) translateY(-2px); }
+}
+.explore-float {
+  animation: explore-float 4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .explore-float { animation: none; }
+}

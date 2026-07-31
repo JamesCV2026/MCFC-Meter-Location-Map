@@ -64,7 +64,7 @@ export function FreeLabel({ site, mapRef, editMode, onUpdate, onDelete, zoom = 1
       <div
         onMouseDown={handleMouseDown}
         onClick={(e) => { if (!editMode && onOpenInfo) { e.stopPropagation(); onOpenInfo(); } }}
-        className={`flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[8.5px] font-semibold leading-tight text-gray-800 bg-white/95 shadow-sm border border-gray-200 backdrop-blur-sm whitespace-nowrap ${editMode ? 'cursor-grab ring-2 ring-indigo-400 ring-offset-1' : onOpenInfo ? 'cursor-pointer' : ''}`}
+        className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[13px] font-bold leading-tight text-gray-800 bg-white/95 shadow-md border border-gray-200 backdrop-blur-sm whitespace-nowrap ${editMode ? 'cursor-grab ring-2 ring-indigo-400 ring-offset-1' : onOpenInfo ? 'cursor-pointer' : ''}`}
       >
         <span style={site.color ? { color: site.color } : undefined}>{site.name}</span>
         {editMode && (
