@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { RotateCw, Maximize2, Move, Trash2 } from 'lucide-react';
 import { panelInfoFor, savePanelInfo } from '@/data/panelInfo';
+import { labelOffsetFor, saveLabelOffset, LabelOffset } from '@/data/stickerLabelOffsets';
 import { VIEW_ONLY } from '@/viewOnly';
 
 export interface StickerTransform {
@@ -28,6 +29,8 @@ interface StickerOverlayProps {
   // When false (default) the sticker is not movable — clicking it opens its
   // info panel via onOpenInfo. Handles only appear in edit mode.
   editMode?: boolean;
+  // Turns the always-on name label into a draggable chip (Move labels mode).
+  labelEditMode?: boolean;
   onOpenInfo?: () => void;
   // Portal target for the always-on name label — rendered on a layer above
   // the markers so labels never get covered by marker icons.
@@ -52,10 +55,50 @@ interface DragState {
 
 export function StickerOverlay({
   id, label, src, transform, mapRef, selected, onSelect, onUpdate, onDelete, zoom = 1, disabled = false, framed = false, objectPosition,
-  editMode = false, onOpenInfo, labelsLayer = null, supersedingLabelNames,
+  editMode = false, labelEditMode = false, onOpenInfo, labelsLayer = null, supersedingLabelNames,
 }: StickerOverlayProps) {
   const transformRef = useRef(transform);
   transformRef.current = transform;
+
+  // ── Draggable name label ────────────────────────────────────────────────
+  // The label normally sits centred above/below its photo circle; this nudge
+  // (stored as % of the map) lets it be dragged clear of a neighbouring label.
+  const [labelOffset, setLabelOffset] = useState<LabelOffset>(() => labelOffsetFor(id));
+  useEffect(() => { setLabelOffset(labelOffsetFor(id)); }, [id]);
+  const labelDrag = useRef<{ startX: number; startY: number; base: LabelOffset; moved: boolean } | null>(null);
+
+  const handleLabelMouseDown = (e: React.MouseEvent) => {
+    if (!labelEditMode) return;
+    e.preventDefault();
+    e.stopPropagation();
+    labelDrag.current = { startX: e.clientX, startY: e.clientY, base: labelOffset, moved: false };
+  };
+
+  useEffect(() => {
+    if (!labelEditMode) return;
+    const onMove = (e: MouseEvent) => {
+      const d = labelDrag.current;
+      if (!d || !mapRef.current) return;
+      const rect = mapRef.current.getBoundingClientRect();
+      if (!rect.width) return;
+      d.moved = true;
+      setLabelOffset({
+        dx: d.base.dx + ((e.clientX - d.startX) / rect.width) * 100 / zoom,
+        dy: d.base.dy + ((e.clientY - d.startY) / rect.height) * 100 / zoom,
+      });
+    };
+    const onUp = () => {
+      const d = labelDrag.current;
+      labelDrag.current = null;
+      if (d?.moved) setLabelOffset((o) => { saveLabelOffset(id, o); return o; });
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, [labelEditMode, id, zoom, mapRef]);
 
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
@@ -291,11 +334,13 @@ export function StickerOverlay({
       <div
         className="absolute"
         style={{
-          left: `${x}%`,
-          top: labelFlipBelow ? `${y + labelHalfH}%` : `${y - labelHalfH}%`,
+          left: `${x + labelOffset.dx}%`,
+          top: (labelFlipBelow ? `${y + labelHalfH + labelOffset.dy}%` : `${y - labelHalfH + labelOffset.dy}%`),
           transform: labelFlipBelow ? 'translate(-50%, 3px)' : 'translate(-50%, calc(-100% - 3px))',
           pointerEvents: 'auto',
+          cursor: labelEditMode ? 'grab' : undefined,
         }}
+        onMouseDown={handleLabelMouseDown}
       >
         {editingLabel ? (
           <input

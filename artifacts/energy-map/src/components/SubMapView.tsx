@@ -1261,6 +1261,7 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
               framed={sticker.framed}
               objectPosition={sticker.objectPosition}
               editMode={stickerLib.stickerEditMode}
+                  labelEditMode={labelEditMode}
               // Every sticker click in a sub-map opens the same in-context
               // info panel. The previous "chooser" modal (7-card Etihad site
               // picker, 6-card CFA picker) is removed per user request —

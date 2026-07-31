@@ -2069,6 +2069,7 @@ export function EnergyMap() {
                   framed={sticker.framed}
                   objectPosition={sticker.objectPosition}
                   editMode={stickerLib.stickerEditMode}
+                  labelEditMode={labelEditMode}
                   // Click a circle photo asset on the overview → navigate
                   // straight into its sub-map. Falls back to the old info-panel
                   // open only if the sticker isn't tied to a known sub-map.
@@ -2102,6 +2103,7 @@ export function EnergyMap() {
                 framed={sticker.framed}
                 objectPosition={sticker.objectPosition}
                 editMode={stickerLib.stickerEditMode}
+                  labelEditMode={labelEditMode}
                 onOpenInfo={() => handleStickerCircleClick(
                   sticker.label,
                   { x: placement.x, y: placement.y },
