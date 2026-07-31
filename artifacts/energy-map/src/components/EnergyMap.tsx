@@ -28,6 +28,7 @@ import { FreeLabel } from './FreeLabel';
 import { submaps } from '@/data/submaps';
 import { SITE_ASSET_GROUPS } from '@/data/siteAssetGroups';
 import { panelInfoFor } from '@/data/panelInfo';
+import { arrowDirOverride } from '@/data/arrowDirections';
 import { RegionBox } from './RegionBox';
 import { loadSubMapRegions, saveSubMapRegions, SubMapRegion } from '@/data/submapRegions';
 import mapImage from '@assets/Overview_1779198593346.png';
@@ -2144,11 +2145,26 @@ export function EnergyMap() {
                   style={{ left: `${hit.t.x}%`, top: `${hit.t.y}%`, transform: 'translate(-50%, -50%)' }}
                   aria-hidden
                 >
-                  <span className="absolute" style={{ right: 'calc(100% + 34px)', top: '50%', transform: 'translateY(-50%)' }}>
-                    <svg className="marker-arrow-in block" width="72" height="48" viewBox="0 0 60 40" style={{ filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.45))' }}>
-                      <path d="M2 13 H38 V6 L58 20 L38 34 V27 H2 Z" fill="#111827" stroke="white" strokeWidth="2.5" strokeLinejoin="round" />
-                    </svg>
-                  </span>
+                  {(() => {
+                    // A sticker site is always a single target, so it gets the
+                    // bigger arrow. Direction is overridable per name in
+                    // data/arrowDirections.ts (defaults to coming from the left).
+                    const g = 34;
+                    const SPOS = {
+                      left:   { right: `calc(100% + ${g}px)`, top: '50%', transform: 'translateY(-50%)' },
+                      right:  { left: `calc(100% + ${g}px)`, top: '50%', transform: 'translateY(-50%) rotate(180deg)' },
+                      top:    { bottom: `calc(100% + ${g}px)`, left: '50%', transform: 'translateX(-50%) rotate(90deg)' },
+                      bottom: { top: `calc(100% + ${g}px)`, left: '50%', transform: 'translateX(-50%) rotate(-90deg)' },
+                    } as const;
+                    const sdir = arrowDirOverride(highlight.stickerName!) ?? 'left';
+                    return (
+                      <span className="absolute" style={SPOS[sdir]}>
+                        <svg className="marker-arrow-in block" width="132" height="88" viewBox="0 0 60 40" style={{ filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.45))' }}>
+                          <path d="M2 13 H38 V6 L58 20 L38 34 V27 H2 Z" fill="#111827" stroke="white" strokeWidth="2.5" strokeLinejoin="round" />
+                        </svg>
+                      </span>
+                    );
+                  })()}
                 </span>
               );
             })()}
@@ -2405,6 +2421,8 @@ export function EnergyMap() {
                     // Solar arrays always come in from the right so they don't
                     // collide with the meter/inverter arrows above and below them.
                     if (asset.type === 'solar-panel' && !asset.idno) dir = 'right';
+                    // Per-asset override (see data/arrowDirections.ts) wins.
+                    dir = arrowDirOverride(panelInfoFor(asset.id).title ?? asset.name) ?? dir;
                     }
                     // One specific asset hovered → 2.5x arrow + pulsing ring.
                     const big = isSingleHighlight;

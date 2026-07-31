@@ -15,6 +15,8 @@ import { StickerOverlay } from './StickerOverlay';
 import { StickerPicker } from './StickerPicker';
 import { AssetInfoPanel } from './AssetInfoPanel';
 import { useStickerLibrary, stickerToPanelItem, assetToPanelItem } from '@/data/stickerLibrary';
+import { panelInfoFor } from '@/data/panelInfo';
+import { arrowDirOverride } from '@/data/arrowDirections';
 import { FilterPanel, HighlightTarget } from './FilterPanel';
 import { groupsForSubmap } from '@/data/siteAssetGroups';
 import { Legend } from './Legend';
@@ -1485,6 +1487,8 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
                     // Solar arrays always come in from the right so they don't
                     // collide with the meter/inverter arrows above and below them.
                     if (asset.type === 'solar-panel' && !asset.idno) dir = 'right';
+                  // Per-asset override (see data/arrowDirections.ts) wins.
+                  dir = arrowDirOverride(panelInfoFor(asset.id).title ?? asset.name) ?? dir;
                   }
                   // One specific asset hovered → 2.5x arrow + pulsing ring.
                   const big = isSingleHighlight;
