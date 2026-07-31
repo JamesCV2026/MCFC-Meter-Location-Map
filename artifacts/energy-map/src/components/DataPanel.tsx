@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react';
-import { ChevronUp, ChevronDown, Zap, Sun, Wrench, Download } from 'lucide-react';
+import { ChevronUp, Zap, Sun, Wrench, Download, ArrowLeft } from 'lucide-react';
 import { HHDataModal } from './HHDataModal';
 
 const HEADER_BG = '#1b3a6b';       // table header / grand total
@@ -542,30 +542,43 @@ export function DataPanel({ open, onToggle }: DataPanelProps) {
       {/* Collapsed state: bold emerald bar with a clear "click to open" cue so
           it reads as an active drawer, not a static footer. Expanded state:
           quieter grey so it recedes behind the data. */}
-      <button
-        onClick={onToggle}
-        className={
-          open
-            ? 'w-full flex items-center justify-between px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 transition-colors group'
-            : 'w-full flex items-center justify-between px-6 py-3.5 bg-emerald-500 hover:bg-emerald-400 transition-colors group animate-pulse-once'
-        }
-        aria-label={open ? 'Collapse data panel' : 'Expand data panel'}
-      >
-        <div className="flex items-center gap-3">
-          <span className={open ? 'text-xs font-bold text-white tracking-wide uppercase' : 'text-sm font-extrabold text-white tracking-wide uppercase'}>
-            Energy Data
-          </span>
-          <span className={open ? 'text-[10px] text-white/90 font-normal' : 'text-[11px] text-white/90 font-semibold'}>
-            {open
-              ? 'Consumption & Generation summary. Click any site to view its half-hourly data.'
-              : 'Click to open Consumption & Generation summary'}
-          </span>
+      {open ? (
+        // Open: white bar (recedes behind the data) with a clear green
+        // "Back to overview" button on the right — the whole bar is no longer a
+        // toggle, so only the button closes it.
+        <div className="w-full flex items-center justify-between px-6 py-2.5 bg-white border-b border-gray-200">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="text-xs font-bold text-gray-800 tracking-wide uppercase shrink-0">Energy Data</span>
+            <span className="hidden sm:inline text-[10px] text-gray-500 font-normal truncate">
+              Consumption &amp; Generation summary. Click any site to view its half-hourly data.
+            </span>
+          </div>
+          <button
+            onClick={onToggle}
+            data-testid="data-panel-back"
+            aria-label="Back to overview"
+            className="shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors"
+          >
+            <ArrowLeft size={14} strokeWidth={2.5} />
+            Back to overview
+          </button>
         </div>
-        <div className={open ? 'flex items-center gap-1 text-white' : 'flex items-center gap-2 text-white font-bold text-xs uppercase tracking-wide'}>
-          {!open && <span className="hidden sm:inline">Open</span>}
-          {open ? <ChevronDown size={22} strokeWidth={2.5} /> : <ChevronUp size={26} strokeWidth={3} className="animate-bounce" />}
-        </div>
-      </button>
+      ) : (
+        <button
+          onClick={onToggle}
+          className="w-full flex items-center justify-between px-6 py-3.5 bg-emerald-500 hover:bg-emerald-400 transition-colors group animate-pulse-once"
+          aria-label="Expand data panel"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-extrabold text-white tracking-wide uppercase">Energy Data</span>
+            <span className="text-[11px] text-white/90 font-semibold">Click to open Consumption &amp; Generation summary</span>
+          </div>
+          <div className="flex items-center gap-2 text-white font-bold text-xs uppercase tracking-wide">
+            <span className="hidden sm:inline">Open</span>
+            <ChevronUp size={26} strokeWidth={3} className="animate-bounce" />
+          </div>
+        </button>
+      )}
 
       {open && (
         // Expanded body fills the space freed by hiding the map (EnergyMap

@@ -2,8 +2,9 @@ import { X, PoundSterling } from 'lucide-react';
 import { Fragment, useState } from 'react';
 import {
   SAVINGS_SUMMARY, SAVINGS_GRAND_TOTAL, SAVINGS_PORTFOLIO_YEARS,
-  SAVINGS_METHODOLOGY_BRIEF, SAVINGS_METHODOLOGY_FULL, SavingsSummaryRow,
+  SAVINGS_METHODOLOGY_BRIEF, SavingsSummaryRow,
 } from '@/data/savingsData';
+import { SavingsMethodologyBody } from './SavingsMethodologyBody';
 
 interface Props {
   open: boolean;
@@ -224,7 +225,7 @@ export function SavingsSummaryModal({ open, onClose, onSelectSite }: Props) {
                 <X size={16} />
               </button>
             </div>
-            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{SAVINGS_METHODOLOGY_FULL}</p>
+            <SavingsMethodologyBody />
           </div>
         </div>
       )}

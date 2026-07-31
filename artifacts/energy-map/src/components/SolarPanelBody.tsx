@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { X, Download, Zap, PiggyBank } from 'lucide-react';
 import { energyForName, energyTotal } from '@/data/energyData';
-import { savingsForName, savingsTotal, SAVINGS_METHODOLOGY, SAVINGS_METHODOLOGY_FULL } from '@/data/savingsData';
+import { savingsForName, savingsTotal, SAVINGS_METHODOLOGY } from '@/data/savingsData';
+import { SavingsMethodologyBody } from './SavingsMethodologyBody';
 import { dataSourcesFor } from '@/data/dataSourceMap';
 import { MonthlyEnergyTable } from './MonthlyEnergyTable';
 import { HHDataModal } from './HHDataModal';
@@ -138,7 +139,7 @@ export function SolarPanelBody({ name }: { name: string }) {
                 <X size={16} />
               </button>
             </div>
-            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{SAVINGS_METHODOLOGY_FULL}</p>
+            <SavingsMethodologyBody />
           </div>
         </div>
       )}

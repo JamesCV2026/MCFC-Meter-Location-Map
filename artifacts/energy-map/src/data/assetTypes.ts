@@ -28,7 +28,7 @@ export const assetTypeConfig: Record<AssetType, AssetTypeMeta> = {
   'board': { label: 'Distribution Board', Icon: CircuitBoard, color: '#7c3aed' }, // purple
   'diesel-generator': { label: 'Diesel Generator', Icon: DieselGeneratorIcon, color: '#4b5563' }, // slate — bespoke containerised genset icon
   'battery': { label: 'Battery', Icon: Battery, color: '#16a34a' },     // green
-  'solar-panel': { label: 'Solar Panel', Icon: Sun, color: '#f59e0b' }, // amber
+  'solar-panel': { label: 'Solar Array', Icon: Sun, color: '#f59e0b' }, // amber
   'building': { label: 'Building', Icon: Building, color: '#ca8a04' },  // mustard
   // Meter-map types (added 2026-07).
   'meter-behind': { label: 'Behind the Meter', Icon: Gauge, color: '#16a34a' },   // green

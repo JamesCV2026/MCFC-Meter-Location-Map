@@ -226,3 +226,16 @@
     box-shadow: 0 0 6px 1px rgba(16, 185, 129, 0.25);
   }
 }
+
+/* Bouncing pointer above a marker that the Infrastructure Index is hovering,
+   so it's obvious which asset(s) on the map the hovered row refers to. */
+@keyframes marker-point-bounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+.marker-point-bounce {
+  animation: marker-point-bounce 0.9s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marker-point-bounce { animation: none; }
+}

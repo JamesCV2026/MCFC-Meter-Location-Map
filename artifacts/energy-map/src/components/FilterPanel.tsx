@@ -35,6 +35,15 @@ function displayName(a: EnergyAsset): string {
   return panelInfoFor(a.id).title ?? a.name;
 }
 
+// Inside the Solar Array group the type is already stated by the card header,
+// so items show just the site — "Hotel Solar Array" → "Hotel".
+function indexItemName(a: EnergyAsset): string {
+  const n = displayName(a);
+  if (effectiveType(a) !== 'solar-panel') return n;
+  const stripped = n.replace(/\s*Solar Array\s*$/i, '').replace(/\s*Solar\s*$/i, '').trim();
+  return stripped || n;
+}
+
 export function FilterPanel({ visible, onChange, embedded = false, assets, onHover, onSelect }: FilterPanelProps) {
   const indexMode = !!assets && !!onHover;
   const [expanded, setExpanded] = useState<Set<AssetType>>(new Set());
@@ -47,7 +56,15 @@ export function FilterPanel({ visible, onChange, embedded = false, assets, onHov
       if (!byType.has(t)) byType.set(t, []);
       byType.get(t)!.push(a);
     }
-    for (const list of byType.values()) list.sort((x, y) => displayName(x).localeCompare(displayName(y)));
+    // Natural/numeric sort so "Behind the Meter 2" comes before "…11" (a plain
+    // string sort would order them 1, 10, 11, 2, 3 — the "all over the place" look).
+    // The numbered series ("Grid Meter 1", "Grid Meter 2" …) sorts first;
+    // special-named assets ("DNO Grid Meter", "IDNO Grid Meter") follow after.
+    for (const [t, list] of byType) {
+      const typeLabel = assetTypeConfig[t]?.label ?? '';
+      const sortKey = (n: string) => (typeLabel && n.startsWith(typeLabel) ? '0' : '1') + n;
+      list.sort((x, y) => sortKey(displayName(x)).localeCompare(sortKey(displayName(y)), undefined, { numeric: true, sensitivity: 'base' }));
+    }
   }
 
   const toggle = (type: AssetType) =>
@@ -138,7 +155,7 @@ export function FilterPanel({ visible, onChange, embedded = false, assets, onHov
                           className="w-full text-left text-[13px] text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md px-2 py-1.5 truncate transition-colors"
                           title={displayName(a)}
                         >
-                          {displayName(a)}
+                          {indexItemName(a)}
                         </button>
                       </li>
                     ))}
@@ -229,7 +246,7 @@ export function FilterPanel({ visible, onChange, embedded = false, assets, onHov
                         className="w-full text-left text-[11px] text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded px-1.5 py-0.5 truncate transition-colors"
                         title={displayName(a)}
                       >
-                        {displayName(a)}
+                        {indexItemName(a)}
                       </button>
                     </li>
                   ))}

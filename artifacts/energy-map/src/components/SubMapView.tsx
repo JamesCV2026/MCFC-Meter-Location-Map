@@ -1462,6 +1462,13 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
                 onMouseDown={(e) => handleMarkerMouseDown(e, asset.id)}
                 onClick={() => { if (!editMode && !cableMode) handleOpen(asset); }}
               >
+                {matchesHighlight && (
+                  <span className="absolute left-1/2 -translate-x-1/2 pointer-events-none z-20" style={{ bottom: 'calc(100% + 3px)' }} aria-hidden>
+                    <svg className="marker-point-bounce block" width="22" height="19" viewBox="0 0 16 14" style={{ filter: 'drop-shadow(0 1.5px 2px rgba(0,0,0,0.45))' }}>
+                      <path d="M8 14 L1.5 2.5 L14.5 2.5 Z" fill={markerColor} stroke="white" strokeWidth="1.6" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                )}
                 <button
                   className="relative flex items-center justify-center focus:outline-none"
                   style={{ width: markerSize, height: markerSize }}

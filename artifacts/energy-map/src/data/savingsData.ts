@@ -11,7 +11,19 @@ export const SAVINGS_METHODOLOGY = `We take the amount of solar electricity the 
 // One-line version for tight spaces (e.g. the summary panel headline).
 export const SAVINGS_METHODOLOGY_BRIEF = `The saving is the gap between the site's solar electricity under the PPA and the same power bought from the grid, projected year by year over 25 years (PPA +3%/yr vs grid +8%/yr).`;
 
-export const SAVINGS_METHODOLOGY_FULL = `This analysis was produced using Clearvolt's in-house solar PPA financial modelling tool, built in Python specifically for long-term solar savings projections. Generation data varies by phase: Phase 1 (Joie Stadium, Indoor Pitch, TV Studio, FM Building) uses actual metered generation data, while Phase 2 (Ground Mount, Womens) and Phase 3 (Hotel, Commercial, Towers) use modelled generation profiles. For each site, generation is split between on-site consumption (90% for Phase 1/2, 100% for Phase 3) and any exported surplus, then projected over the full 25-year PPA term with the PPA rate (15.5p/kWh) escalating 3% annually against a grid rate (21.8p/kWh) escalating 8% annually. Annual savings reflect the value of grid electricity avoided plus export income, less the PPA cost, giving a year-by-year and cumulative savings position for each site and the portfolio.`;
+export const SAVINGS_METHODOLOGY_FULL = `Generation data varies by phase: Phase 1 (Joie Stadium, Indoor Pitch, TV Studio, FM Building) uses actual metered generation data, while Phases 2 (Ground Mount, Womens) and 3 (Hotel, Commercial, Towers) use modelled generation profiles. For each site, generation is split between on-site consumption (90% for Phases 1 and 2, 100% for Phase 3) and any exported surplus.
+
+Savings are calculated on a year-by-year basis over the full 25-year PPA term. In each year, the cost of solar electricity under the PPA is compared against the cost of purchasing the same electricity from the grid:
+
+Annual PPA cost = On-site generation consumed × PPA rate
+(starting at 15.5p/kWh, escalating at 3% per year)
+
+Annual avoided grid cost = On-site generation consumed × grid rate
+(starting at 21.8p/kWh, escalating at 8% per year)
+
+Annual saving = Avoided grid cost + Export income − PPA cost
+
+Because the grid rate is assumed to escalate faster than the PPA rate (8% vs 3% per year), the gap between the two widens each year, meaning annual savings grow over the life of the agreement. Summing each year's saving gives the cumulative 25-year savings position for each site and for the portfolio as a whole.`;
 
 const SAVINGS: Record<string, number[]> = {
   'joie-stadium': [40518, 48735, 57729, 67112, 77405, 89129, 101912, 115542, 130408, 146608, 164364, 183673, 204657, 227446, 252184, 279022, 308126, 339671, 373849, 410864, 451107, 494643, 541730, 592642, 647675],

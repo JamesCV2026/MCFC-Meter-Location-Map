@@ -4,7 +4,8 @@ import { EnergyAsset } from '@/data/assets';
 import { assetTypeConfig } from '@/data/assetTypes';
 import { VIEW_ONLY } from '@/viewOnly';
 import { energyForName, energyTotal, energyMonthLabel } from '@/data/energyData';
-import { savingsForName, savingsTotal, SAVINGS_METHODOLOGY, SAVINGS_METHODOLOGY_FULL } from '@/data/savingsData';
+import { savingsForName, savingsTotal, SAVINGS_METHODOLOGY } from '@/data/savingsData';
+import { SavingsMethodologyBody } from './SavingsMethodologyBody';
 import { inverterColumnsFor, invColMonthlyTotal } from '@/data/inverterGenData';
 import { panelInfoFor, savePanelInfo, PanelInfo } from '@/data/panelInfo';
 import { equipmentSpecsFor, hasAnySpec } from '@/data/equipmentSpecs';
@@ -829,7 +830,7 @@ export function SidePanel({ asset, onClose, onDelete, hideDelete = false }: Side
                 <X size={16} />
               </button>
             </div>
-            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{SAVINGS_METHODOLOGY_FULL}</p>
+            <SavingsMethodologyBody />
           </div>
         </div>
       )}

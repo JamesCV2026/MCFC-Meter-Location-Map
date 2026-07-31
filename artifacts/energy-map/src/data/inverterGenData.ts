@@ -31,19 +31,19 @@ export const inverterColumns: Record<string, InverterColumn> = {
   'ground-mount-inv-2': { name: 'Ground Mount Inverter 2', startIndex: 0, values: [4184, 8224, 11267, 16657, 19695, 18141, 18134, 15487, 12710, 8955, 5184, 3678] },
 };
 
-// PLACEHOLDER column -> inverter mapping. East -> Inverter 8 is confirmed; the
-// rest are grouped by roof orientation as a first pass. Edit these arrays to
-// reassign columns to inverters (keyed by the inverter marker's display name).
-// Keyed by the inverter marker's letter name (Inverters 2..10 renamed A..I).
+// Column -> inverter mapping, keyed by the inverter marker's display name.
+// 2026-07 renumber: inverters now run 1-9 in site-walk order — Joie 1-4,
+// Indoor Pitch 5, TV Studio 6, FM 7, Women's 8, Ground Mount 9.
+// (History: originally "Inverters 2..10", then letters A..I, now numbers.)
 export const inverterMapping: Record<string, string[]> = {
-  'Inverter G': ['joie-stadium-1-roof-east', 'joie-stadium-3-roof-east', 'joie-stadium-10-roof-east', 'joie-stadium-12-roof-east'], // was Inverters 8 (East)
-  'Inverter A': ['joie-stadium-4-roof-north', 'joie-stadium-7-roof-north', 'joie-stadium-8-roof-north'],                            // was Inverters 2 (now North — by elimination)
-  'Inverter B': ['joie-stadium-5-roof-south', 'joie-stadium-11-roof-south', 'joie-stadium-13-roof-south'],                          // was Inverters 3 (now South) [user]
-  'Inverter C': ['joie-stadium-2-roof-west', 'joie-stadium-6-roof-west', 'joie-stadium-9-roof-west', 'joie-stadium-14-roof-west'], // was Inverters 4 (now West) [user]
-  'Inverter D': ['meter-22571483', 'meter-22571532', 'meter-22571671', 'meter-22571782', 'meter-22571957', 'meter-22571976'],      // was Inverters 5 (Indoor Pitch, 6 meters)
-  'Inverter E': ['tv-studio'],   // was Inverters 6
-  'Inverter F': ['fm-building'], // was Inverters 7
-  'Inverter H': ['ground-mount-inv-1', 'ground-mount-inv-2'], // Phase 2A Ground Mount split across its 2 inverters (each ≈ half of 284,628)
+  'Inverter 1': ['joie-stadium-4-roof-north', 'joie-stadium-7-roof-north', 'joie-stadium-8-roof-north'],                            // was Inverter A (North)
+  'Inverter 2': ['joie-stadium-5-roof-south', 'joie-stadium-11-roof-south', 'joie-stadium-13-roof-south'],                          // was Inverter B (South)
+  'Inverter 3': ['joie-stadium-2-roof-west', 'joie-stadium-6-roof-west', 'joie-stadium-9-roof-west', 'joie-stadium-14-roof-west'], // was Inverter C (West)
+  'Inverter 4': ['joie-stadium-1-roof-east', 'joie-stadium-3-roof-east', 'joie-stadium-10-roof-east', 'joie-stadium-12-roof-east'], // was Inverter G (East)
+  'Inverter 5': ['meter-22571483', 'meter-22571532', 'meter-22571671', 'meter-22571782', 'meter-22571957', 'meter-22571976'],      // was Inverter D (Indoor Pitch, 6 meters)
+  'Inverter 6': ['tv-studio'],   // was Inverter E
+  'Inverter 7': ['fm-building'], // was Inverter F
+  'Inverter 9': ['ground-mount-inv-1', 'ground-mount-inv-2'], // was Inverter H — Ground Mount split across its 2 inverters (each ≈ half of 284,628)
 };
 
 export function inverterColumnsFor(name: string): InverterColumn[] {
