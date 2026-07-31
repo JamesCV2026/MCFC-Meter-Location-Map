@@ -1184,12 +1184,12 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
                   {stickersHidden ? 'Show stickers' : 'Hide stickers'}
                 </button>
               )}
-              {userLabels.length > 0 && (
-                <button data-testid="btn-toggle-labels" onClick={() => setLabelsHidden((v) => !v)} className="flex items-center gap-1.5 px-3 py-2 border-t border-gray-200 hover:bg-gray-50 transition-colors" title={labelsHidden ? 'Show all labels' : 'Hide all labels'}>
-                  <Tag size={13} className={labelsHidden ? 'text-gray-400' : 'text-indigo-500'} />
-                  {labelsHidden ? 'Show labels' : 'Hide labels'}
-                </button>
-              )}
+              {/* Always available — even with no user-added labels there are
+                  sticker name labels (Joie Stadium, TV Studio…) to hide. */}
+              <button data-testid="btn-toggle-labels" onClick={() => setLabelsHidden((v) => !v)} className="flex items-center gap-1.5 px-3 py-2 border-t border-gray-200 hover:bg-gray-50 transition-colors" title={labelsHidden ? 'Show all labels' : 'Hide all labels'}>
+                <Tag size={13} className={labelsHidden ? 'text-gray-400' : 'text-indigo-500'} />
+                {labelsHidden ? 'Show labels' : 'Hide labels'}
+              </button>
               <button data-testid="btn-toggle-legend" onClick={handleToggleLegend} className="flex items-center gap-1.5 px-3 py-2 border-t border-gray-200 hover:bg-gray-50 transition-colors" title={legendHidden ? 'Show the assets panel' : 'Hide the assets panel'}>
                 <List size={13} className={legendHidden ? 'text-gray-400' : 'text-indigo-500'} />
                 {legendHidden ? 'Show assets' : 'Hide assets'}
@@ -1266,6 +1266,7 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
               objectPosition={sticker.objectPosition}
               editMode={stickerLib.stickerEditMode}
                   labelEditMode={labelEditMode}
+                  labelsHidden={labelsHidden}
               // Every sticker click in a sub-map opens the same in-context
               // info panel. The previous "chooser" modal (7-card Etihad site
               // picker, 6-card CFA picker) is removed per user request —

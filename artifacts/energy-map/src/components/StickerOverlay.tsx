@@ -31,6 +31,8 @@ interface StickerOverlayProps {
   editMode?: boolean;
   // Turns the always-on name label into a draggable chip (Move labels mode).
   labelEditMode?: boolean;
+  // Global 'Hide labels' toggle — hides this sticker's always-on name label.
+  labelsHidden?: boolean;
   onOpenInfo?: () => void;
   // Portal target for the always-on name label — rendered on a layer above
   // the markers so labels never get covered by marker icons.
@@ -55,7 +57,7 @@ interface DragState {
 
 export function StickerOverlay({
   id, label, src, transform, mapRef, selected, onSelect, onUpdate, onDelete, zoom = 1, disabled = false, framed = false, objectPosition,
-  editMode = false, labelEditMode = false, onOpenInfo, labelsLayer = null, supersedingLabelNames,
+  editMode = false, labelEditMode = false, labelsHidden = false, onOpenInfo, labelsLayer = null, supersedingLabelNames,
 }: StickerOverlayProps) {
   const transformRef = useRef(transform);
   transformRef.current = transform;
@@ -328,7 +330,7 @@ export function StickerOverlay({
         photo on a 16:9 map — close enough for the small photo stickers).
         Skipped when a free/site label on the same map already shows this
         name (labels supersede sticker auto-name tags). */}
-    {!editMode && !panelInfo.hideLabel
+    {!editMode && !labelsHidden && !panelInfo.hideLabel
       && !supersedingLabelNames?.has(displayName.trim().toLowerCase())
       && labelsLayer && createPortal(
       <div
