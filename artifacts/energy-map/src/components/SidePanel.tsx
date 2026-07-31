@@ -159,8 +159,8 @@ export function SidePanel({ asset, onClose, onDelete, hideDelete = false }: Side
           const qty = asset.quantity ?? 1;
           // Build status (built vs proposed) for solar/meter/inverter markers.
           const showStatus = asset.type === 'solar-panel' || asset.type === 'inverter' || asset.type === 'meter-behind' || asset.type === 'meter-front';
-          const status: 'built' | 'proposed' = info.status ?? 'built';
-          const changeStatus = (s: 'built' | 'proposed') => {
+          const status: 'built' | 'proposed' | 'design' = info.status ?? 'built';
+          const changeStatus = (s: 'built' | 'proposed' | 'design') => {
             const next: PanelInfo = { ...info, status: s };
             savePanelInfo(asset.id, next);
             setInfo(next);
@@ -274,21 +274,26 @@ export function SidePanel({ asset, onClose, onDelete, hideDelete = false }: Side
                   <div data-testid="side-panel-status" className="mb-5 flex items-center gap-3">
                     <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Status</span>
                     {VIEW_ONLY ? (
-                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${status === 'built' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700 border border-dashed border-amber-400'}`}>
-                        {status === 'built' ? 'Built' : 'In build'}
+                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${status === 'built' ? 'bg-emerald-100 text-emerald-700' : status === 'proposed' ? 'bg-amber-100 text-amber-700 border border-dashed border-amber-400' : 'bg-sky-100 text-sky-700 border border-dashed border-sky-400'}`}>
+                        {status === 'built' ? 'Built' : status === 'proposed' ? 'In build' : 'In design'}
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
                         <button
-                          data-testid="side-panel-status-built"
-                          onClick={() => changeStatus('built')}
-                          className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${status === 'built' ? 'bg-emerald-500 text-white' : 'text-gray-500 hover:text-gray-800'}`}
-                        >Built</button>
+                          data-testid="side-panel-status-design"
+                          onClick={() => changeStatus('design')}
+                          className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${status === 'design' ? 'bg-sky-500 text-white' : 'text-gray-500 hover:text-gray-800'}`}
+                        >In design</button>
                         <button
                           data-testid="side-panel-status-proposed"
                           onClick={() => changeStatus('proposed')}
                           className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${status === 'proposed' ? 'bg-amber-500 text-white' : 'text-gray-500 hover:text-gray-800'}`}
                         >In build</button>
+                        <button
+                          data-testid="side-panel-status-built"
+                          onClick={() => changeStatus('built')}
+                          className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${status === 'built' ? 'bg-emerald-500 text-white' : 'text-gray-500 hover:text-gray-800'}`}
+                        >Built</button>
                       </span>
                     )}
                   </div>

@@ -16,10 +16,12 @@ export interface PanelInfo {
   // a back layer (so a big background sticker sits beneath the others).
   hideLabel?: boolean;
   backLayer?: boolean;
-  // Build status — whether this asset (solar array, meter, inverter, etc.) is
-  // already built/existing or still proposed/planned. Shown on the hover
-  // tooltip and the click panel. Undefined is treated as 'built'.
-  status?: 'built' | 'proposed';
+  // Build status — lifecycle of this asset (solar array, meter, inverter, etc.):
+  //   'design'   — proposed / in design, NOT yet approved
+  //   'proposed' — approved & under construction ("In build")
+  //   'built'    — existing/complete
+  // Shown on the hover tooltip and the click panel. Undefined is treated as 'built'.
+  status?: 'built' | 'proposed' | 'design';
 }
 
 const PANEL_INFO_KEY = 'energy-map-asset-panel-info';

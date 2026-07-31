@@ -34,8 +34,8 @@ export function MarkerTooltip({ asset, onViewData, onDelete, flipDown = false, h
   const hideEnergy = isInverter || asset.type === 'meter-behind' || asset.type === 'meter-front';
   // Build status (built vs proposed) for solar/meter/inverter markers.
   const showStatus = isInverter || asset.type === 'solar-panel' || asset.type === 'meter-behind' || asset.type === 'meter-front';
-  const [status, setStatus] = useState<'built' | 'proposed'>(panelInfoFor(asset.id).status ?? 'built');
-  const changeStatus = (s: 'built' | 'proposed') => {
+  const [status, setStatus] = useState<'built' | 'proposed' | 'design'>(panelInfoFor(asset.id).status ?? 'built');
+  const changeStatus = (s: 'built' | 'proposed' | 'design') => {
     savePanelInfo(asset.id, { ...panelInfoFor(asset.id), status: s });
     setStatus(s);
   };
@@ -95,9 +95,9 @@ export function MarkerTooltip({ asset, onViewData, onDelete, flipDown = false, h
             {showStatus && (
               <span
                 data-testid={`status-badge-${asset.id}`}
-                className={`ml-auto text-[8px] font-semibold uppercase tracking-tight whitespace-nowrap px-1.5 py-[1px] rounded-full ${status === 'built' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}
+                className={`ml-auto text-[8px] font-semibold uppercase tracking-tight whitespace-nowrap px-1.5 py-[1px] rounded-full ${status === 'built' ? 'bg-emerald-500/20 text-emerald-300' : status === 'proposed' ? 'bg-amber-500/20 text-amber-300' : 'bg-sky-500/20 text-sky-300'}`}
               >
-                {status === 'built' ? 'Built' : 'In build'}
+                {status === 'built' ? 'Built' : status === 'proposed' ? 'In build' : 'In design'}
               </span>
             )}
           </div>
@@ -111,15 +111,20 @@ export function MarkerTooltip({ asset, onViewData, onDelete, flipDown = false, h
                 <span className="text-gray-500 text-xs">Status</span>
                 <span className="flex items-center gap-0.5 bg-white/5 rounded-md p-0.5">
                   <button
-                    data-testid={`status-built-${asset.id}`}
-                    onClick={(e) => { e.stopPropagation(); changeStatus('built'); }}
-                    className={`px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap transition-colors ${status === 'built' ? 'bg-emerald-500 text-white' : 'text-gray-400 hover:text-white'}`}
-                  >Built</button>
+                    data-testid={`status-design-${asset.id}`}
+                    onClick={(e) => { e.stopPropagation(); changeStatus('design'); }}
+                    className={`px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap transition-colors ${status === 'design' ? 'bg-sky-500 text-white' : 'text-gray-400 hover:text-white'}`}
+                  >In design</button>
                   <button
                     data-testid={`status-proposed-${asset.id}`}
                     onClick={(e) => { e.stopPropagation(); changeStatus('proposed'); }}
                     className={`px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap transition-colors ${status === 'proposed' ? 'bg-amber-500 text-white' : 'text-gray-400 hover:text-white'}`}
                   >In build</button>
+                  <button
+                    data-testid={`status-built-${asset.id}`}
+                    onClick={(e) => { e.stopPropagation(); changeStatus('built'); }}
+                    className={`px-2 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap transition-colors ${status === 'built' ? 'bg-emerald-500 text-white' : 'text-gray-400 hover:text-white'}`}
+                  >Built</button>
                 </span>
               </div>
             )}
