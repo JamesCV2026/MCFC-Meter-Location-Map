@@ -881,9 +881,8 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
           </div>
         </div>
 
-        <div className="text-xs text-gray-400">
-          <span className="font-semibold text-gray-700">{assets.length}</span> markers
-        </div>
+        {/* Marker count removed — the Infrastructure Index already shows
+            per-type counts, so it added nothing for the viewer. */}
 
         <div className="ml-auto flex items-center gap-3">
           {/* Clearvolt brand mark — far right of the sub-map header. */}
