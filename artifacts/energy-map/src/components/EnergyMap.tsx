@@ -27,6 +27,7 @@ import { AddLabelDialog } from './AddLabelDialog';
 import { FreeLabel } from './FreeLabel';
 import { submaps } from '@/data/submaps';
 import { SITE_ASSET_GROUPS } from '@/data/siteAssetGroups';
+import { panelInfoFor } from '@/data/panelInfo';
 import { RegionBox } from './RegionBox';
 import { loadSubMapRegions, saveSubMapRegions, SubMapRegion } from '@/data/submapRegions';
 import mapImage from '@assets/Overview_1779198593346.png';
@@ -352,6 +353,71 @@ export function EnergyMap() {
   cableListRef.current = cableList;
 
   const mapRef = useRef<HTMLDivElement>(null);
+
+  // ── Canva-style adjustable framing ────────────────────────────────────────
+  // The map is a croppable canvas: scroll to zoom, drag to reposition (every
+  // marker/sticker/cable is pinned to the image, so they all move together).
+  // The framing is persisted (as size-independent fractions) and rides into
+  // the deployment snapshot, so however James leaves it IS the default view.
+  const FRAMING_KEY = 'energy-map-view-framing';
+  const framingLoaded = useRef(false);
+  const zoomRef = useRef(1);
+  useEffect(() => { zoomRef.current = mapZoom; }, [mapZoom]);
+
+  // Restore the saved framing on load.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(FRAMING_KEY);
+      const f = raw ? JSON.parse(raw) : null;
+      if (!f || typeof f.zoom !== 'number' || f.zoom <= 1) { framingLoaded.current = true; return; }
+      setMapZoom(f.zoom);
+      // Pan lands a beat later so the zoom-change clamp (which can measure a
+      // 0-width rect mid-layout) has already run and can't zero it.
+      const t = setTimeout(() => {
+        const el = mapRef.current;
+        if (el) {
+          const r = el.getBoundingClientRect();
+          if (r.width) setMapPan({ x: (f.fx ?? 0) * r.width, y: (f.fy ?? 0) * r.height });
+        }
+        framingLoaded.current = true;
+      }, 150);
+      return () => clearTimeout(t);
+    } catch { framingLoaded.current = true; }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Save the framing (debounced) whenever it changes.
+  useEffect(() => {
+    if (!framingLoaded.current) return;
+    const t = setTimeout(() => {
+      const el = mapRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      if (!r.width) return;
+      try {
+        localStorage.setItem(FRAMING_KEY, JSON.stringify({ zoom: mapZoom, fx: mapPan.x / r.width, fy: mapPan.y / r.height }));
+      } catch { /* quota — framing just won't persist */ }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [mapZoom, mapPan]);
+
+  // Scroll-to-zoom on the map (native listener so preventDefault works).
+  useEffect(() => {
+    const el = mapRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const z = zoomRef.current;
+      const nz = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Math.round(z * (e.deltaY < 0 ? 1.08 : 0.93) * 100) / 100));
+      if (nz === z) return;
+      setMapZoom(nz);
+      // Scale the pan with the zoom so the view stays centred on the same spot.
+      setMapPan((p) => ({ x: (p.x * nz) / z, y: (p.y * nz) / z }));
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
+
   const panRef = useRef<{ startX: number; startY: number; panX: number; panY: number } | null>(null);
   const cableDragRef = useRef<{ cableId: string; index: number; startX: number; startY: number; moved: boolean } | null>(null);
   const cableMoveRef = useRef<{ cableId: string; startX: number; startY: number; startPoints: CablePoint[]; moved: boolean } | null>(null);
@@ -1449,6 +1515,21 @@ export function EnergyMap() {
   // Overview assets = the overview's own editable battery markers, plus the
   // read-only infrastructure projected in from every sub-map.
   const registeredAssets = [...assets.filter((a) => !deletedAssetIds.has(a.id)), ...projectedAssets];
+
+  // Which markers the current hover targets. Drives two things:
+  //  • centroid — arrows fan around a CLUSTER (approach from the outside)
+  //  • single   — one specific asset gets a 2.5x arrow + pulsing ring, so a
+  //               client is hit over the head with exactly where it is.
+  const highlightMatches = highlight
+    ? registeredAssets.filter((a) => highlight.ids ? highlight.ids.includes(a.id)
+      : highlight.id ? highlight.id === a.id
+      : highlight.type === (a.idno ? 'idno' : a.type))
+    : [];
+  const isSingleHighlight = highlightMatches.length === 1;
+  const highlightCentroid = highlightMatches.length < 2 ? null : {
+    x: highlightMatches.reduce((s, a) => s + a.x, 0) / highlightMatches.length,
+    y: highlightMatches.reduce((s, a) => s + a.y, 0) / highlightMatches.length,
+  };
   const visibleAssets = registeredAssets.filter((a) => visibleTypes.has(a.idno ? 'idno' : a.type));
 
   const zoomScale = (zoomedSite?.zoom ?? 1) * mapZoom;
@@ -1867,10 +1948,10 @@ export function EnergyMap() {
         {/* Columns wrapped in a block that sizes to the map's own height, so the
             side panels reach exactly the map's bottom edge — no white band under
             the map. The block is centred in the available area. */}
-        <div data-testid="overview-row" className="flex items-stretch w-full max-h-full">
+        <div data-testid="overview-row" className="flex items-stretch w-full h-full">
         {/* ── LEFT dashboard column (off the map): Assets list + view toggles ── */}
         {!editMode && (
-          <aside data-testid="left-dashboard" className="hidden xs:flex flex-col gap-3 flex-1 min-w-[190px] overflow-hidden bg-slate-50 border-r border-gray-200 p-3">
+          <aside data-testid="left-dashboard" className="hidden xs:flex flex-col gap-3 flex-[1.35] min-w-[220px] overflow-hidden bg-slate-50 border-r border-gray-200 p-3">
             {!legendHidden && (
               <Legend
                 embedded
@@ -1908,29 +1989,35 @@ export function EnergyMap() {
         {/* ── CENTER — the map itself. shrink-0 so this column hugs the 16:9
              map exactly; the side dashboards (flex-1) then absorb ALL the
              left-over width, so there's no grey letterbox around the map. ── */}
-        <div className="shrink-0 w-full lg:w-[calc(100%_-_560px)] flex items-center justify-center overflow-hidden relative">
+        <div className="shrink-0 h-full max-w-full flex items-center justify-center overflow-hidden relative">
+        {/* ── Crop frame — James's framing: keep x 24-84% / y 20-100% of the
+            base image (a 4:3 region) and chop the empty top band and the
+            left/right margins. The full 16:9 canvas sits INSIDE this frame,
+            oversized and offset, so every marker/sticker/cable stays glued to
+            the image while the unwanted strips fall outside the frame. */}
+        <div
+          data-testid="map-crop-frame"
+          className="relative overflow-hidden bg-white"
+          style={{ aspectRatio: '4 / 3', height: '100%', maxWidth: '100%' }}
+        >
         <div
           data-testid="map-container"
           ref={mapRef}
-          className={`relative overflow-hidden bg-white mx-auto ${
+          className={`absolute overflow-hidden bg-white ${
             editMode || addMpanMode || addLabelMode || cableMode
               ? 'cursor-crosshair'
               : mapZoom > 1
                 ? isPanning ? 'cursor-grabbing' : 'cursor-grab'
                 : ''
           }`}
-          // Fit-in-viewport sizing: the map is a 16:9 box that always sits
-          // entirely inside the visible viewport, with letterbox bars on the
-          // sides when the viewport is wider than 16:9.
-          //   height:   100% of the main wrapper (which has minHeight of
-          //             ~100dvh - 160px, so the map gets the full viewport
-          //             minus header + data-panel toolbar)
-          //   aspect:   locked at 16 / 9 → width derived from height
-          //   maxWidth: 100% → shrinks if it would overflow horizontally
+          // The full 16:9 canvas: width = frame / 0.60 (region is 60% of the
+          // image wide), shifted left 24% and up 20% of itself so the frame
+          // shows exactly the x 24-84 / y 20-100 window.
           style={{
             aspectRatio: '16 / 9',
-            width: '100%',
-            maxHeight: '100%',
+            width: `${100 / 0.60}%`,
+            left: `${(-0.24 / 0.60) * 100}%`,
+            top: '-25%',
           }}
           onClick={handleMapClick}
           onMouseDown={handleMapMouseDown}
@@ -2032,6 +2119,39 @@ export function EnergyMap() {
                 labelsLayer={stickerLabelsLayer}
               />
             ))}
+
+            {/* Hover arrow for photo-sticker sites (Mamma Mia, City At Home,
+                North Stand …) — they have no markers, so the arrow points at
+                the sticker circle itself. */}
+            {highlight?.stickerName && !stickersHidden && (() => {
+              // Legend names and sticker labels don't always match exactly
+              // ("Mamma Mia studio" vs "Mamma Mia Theatre"), so compare on the
+              // significant words and accept a prefix/containment match.
+              const norm = (s: string) => s.trim().toLowerCase().replace(/\b(building|theatre|studio|centre|center|the)\b/g, '').replace(/\s+/g, ' ').trim();
+              const want = norm(highlight.stickerName!);
+              const nameOf = (id: string, label: string) => norm(panelInfoFor(id).title ?? label);
+              const matches = (n: string) => !!n && !!want && (n === want || n.startsWith(want) || want.startsWith(n));
+              const hit = configStickers.filter((s) => !deletedStickerIds.has(s.id))
+                  .map((s) => ({ n: nameOf(s.id, s.label), t: stickerTransforms[s.id] }))
+                  .find((s) => s.t && matches(s.n))
+                ?? stickerLib.placed
+                  .map(({ sticker, placement }) => ({ n: nameOf(sticker.id, sticker.label), t: placement }))
+                  .find((s) => s.t && matches(s.n));
+              if (!hit?.t) return null;
+              return (
+                <span
+                  className="absolute pointer-events-none z-30"
+                  style={{ left: `${hit.t.x}%`, top: `${hit.t.y}%`, transform: 'translate(-50%, -50%)' }}
+                  aria-hidden
+                >
+                  <span className="absolute" style={{ right: 'calc(100% + 34px)', top: '50%', transform: 'translateY(-50%)' }}>
+                    <svg className="marker-arrow-in block" width="72" height="48" viewBox="0 0 60 40" style={{ filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.45))' }}>
+                      <path d="M2 13 H38 V6 L58 20 L38 34 V27 H2 Z" fill="#111827" stroke="white" strokeWidth="2.5" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                </span>
+              );
+            })()}
 
             {/* Cables — z-index 10, below stickers, below markers */}
             <CableLayer
@@ -2224,14 +2344,14 @@ export function EnergyMap() {
               // glow). Substations sit a touch bigger than the ordinary
               // markers because each one represents a significant chunk of
               // the campus electrical infrastructure.
-              const markerSize = asset.type === 'wind-turbine' ? 48
-                : asset.type === 'building' ? 24
-                : asset.type === 'substation' ? 26
-                : 18;
-              const markerIcon = asset.type === 'wind-turbine' ? 42
-                : asset.type === 'building' ? 13
-                : asset.type === 'substation' ? 15
-                : 10;
+              const markerSize = asset.type === 'wind-turbine' ? 60
+                : asset.type === 'building' ? 30
+                : asset.type === 'substation' ? 32
+                : 23;
+              const markerIcon = asset.type === 'wind-turbine' ? 52
+                : asset.type === 'building' ? 16
+                : asset.type === 'substation' ? 19
+                : 13;
               return (
                 <div
                   key={asset.id}
@@ -2274,16 +2394,53 @@ export function EnergyMap() {
                     handleOpen(asset);
                   }}
                 >
-                  {matchesHighlight && (
-                    <span className="absolute left-1/2 -translate-x-1/2 pointer-events-none z-20" style={{ bottom: 'calc(100% + 3px)' }} aria-hidden>
-                      <svg className="marker-point-bounce block" width="30" height="26" viewBox="0 0 16 14" style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.5))' }}>
-                        <path d="M8 14 L1.5 2.5 L14.5 2.5 Z" fill={markerColor} stroke="white" strokeWidth="1.6" strokeLinejoin="round" />
-                      </svg>
-                    </span>
-                  )}
+                  {matchesHighlight && (() => {
+                    // Nearby highlighted markers get arrows from DIFFERENT sides
+                    // (outward from the cluster centre) so they never pile up.
+                    let dir: 'left' | 'right' | 'top' | 'bottom' = 'left';
+                    if (highlightCentroid) {
+                      const dx = asset.x - highlightCentroid.x;
+                      const dy = asset.y - highlightCentroid.y;
+                      dir = Math.abs(dx) >= Math.abs(dy) ? (dx >= 0 ? 'right' : 'left') : (dy >= 0 ? 'bottom' : 'top');
+                    // Solar arrays always come in from the right so they don't
+                    // collide with the meter/inverter arrows above and below them.
+                    if (asset.type === 'solar-panel' && !asset.idno) dir = 'right';
+                    }
+                    // One specific asset hovered → 2.5x arrow + pulsing ring.
+                    const big = isSingleHighlight;
+                    const w = big ? 132 : 72;
+                    const h = big ? 88 : 48;
+                    const gap = big ? 11 : 8;
+                    const POS = {
+                      left:   { right: `calc(100% + ${gap}px)`, top: '50%', transform: 'translateY(-50%)' },
+                      right:  { left: `calc(100% + ${gap}px)`, top: '50%', transform: 'translateY(-50%) rotate(180deg)' },
+                      top:    { bottom: `calc(100% + ${gap + 2}px)`, left: '50%', transform: 'translateX(-50%) rotate(90deg)' },
+                      bottom: { top: `calc(100% + ${gap + 2}px)`, left: '50%', transform: 'translateX(-50%) rotate(-90deg)' },
+                    } as const;
+                    return (
+                    <>
+                      {big && (
+                        <span
+                          className="marker-focus-ring absolute left-1/2 top-1/2 pointer-events-none z-10 rounded-full"
+                          style={{ width: markerSize * 2.6, height: markerSize * 2.6, marginLeft: -(markerSize * 1.3), marginTop: -(markerSize * 1.3), border: `3px solid ${markerColor}` }}
+                          aria-hidden
+                        />
+                      )}
+                      <span className="absolute pointer-events-none z-20" style={POS[dir]} aria-hidden>
+                        <svg className="marker-arrow-in block" width={w} height={h} viewBox="0 0 60 40" style={{ filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.45))' }}>
+                          <path d="M2 13 H38 V6 L58 20 L38 34 V27 H2 Z" fill="#111827" stroke="white" strokeWidth="2.5" strokeLinejoin="round" />
+                        </svg>
+                      </span>
+                    </>
+                    );
+                  })()}
                   <button
                     className="relative flex items-center justify-center focus:outline-none"
-                    style={{ width: markerSize, height: markerSize }}
+                    style={{ width: markerSize, height: markerSize,
+                      // The marker the hover arrow points at grows 50% so the
+                      // eye lands on it, not just the arrow.
+                      transform: matchesHighlight ? 'scale(1.5)' : undefined,
+                      transition: 'transform 0.18s cubic-bezier(0.22, 1, 0.36, 1)' }}
                     aria-label={`${editMode ? 'Drag' : 'Open'} ${asset.name}`}
                     tabIndex={editMode ? -1 : 0}
                   >
@@ -2374,9 +2531,11 @@ export function EnergyMap() {
               live in the off-map dashboard columns — see the <aside> elements
               wrapping this map, not overlaid here. */}
 
-          {/* Zoom controls */}
+          {/* Zoom controls — offset so they hug the VISIBLE (cropped) frame's
+              corner: the canvas extends 16% beyond the frame on the right. */}
           <div
-            className="absolute bottom-3 right-3 z-20 flex flex-col bg-white/95 backdrop-blur-sm rounded-lg border border-gray-200 shadow-lg overflow-hidden"
+            className="absolute bottom-3 z-20 flex flex-col bg-white/95 backdrop-blur-sm rounded-lg border border-gray-200 shadow-lg overflow-hidden"
+            style={{ right: 'calc(16% + 12px)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -2412,7 +2571,8 @@ export function EnergyMap() {
               Legend as its footer so it sits directly under the Assets panel. */}
           {!editMode && (
             <div
-              className="absolute bottom-3 left-3 z-20 flex flex-col items-start gap-2"
+              className="absolute bottom-3 z-20 flex flex-col items-start gap-2"
+              style={{ left: 'calc(24% + 12px)' }}
               onClick={(e) => e.stopPropagation()}
             >
               {cableHistory.length > 0 && (
@@ -2441,6 +2601,7 @@ export function EnergyMap() {
               Click to zoom out
             </button>
           )}
+        </div>
         </div>
         </div>
 

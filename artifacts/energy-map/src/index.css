@@ -227,15 +227,30 @@
   }
 }
 
-/* Bouncing pointer above a marker that the Infrastructure Index is hovering,
-   so it's obvious which asset(s) on the map the hovered row refers to. */
-@keyframes marker-point-bounce {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-3px); }
+/* Big black arrow that flies in from the left and jabs at the marker the
+   Infrastructure Index is hovering, so there's zero doubt which asset it is. */
+@keyframes marker-arrow-enter {
+  from { transform: translateX(-18px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
 }
-.marker-point-bounce {
-  animation: marker-point-bounce 0.9s ease-in-out infinite;
+.marker-arrow-in {
+  /* One smooth glide in, then hold still — clean, no looping wobble. */
+  animation: marker-arrow-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Soft pulsing ring under a SINGLE highlighted marker — pairs with the big
+   arrow so a client can't miss where one specific asset sits. */
+@keyframes marker-focus-ring {
+  0%   { transform: scale(0.7); opacity: 0.55; }
+  70%  { transform: scale(1.65); opacity: 0; }
+  100% { transform: scale(1.65); opacity: 0; }
+}
+.marker-focus-ring {
+  animation: marker-focus-ring 1.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .marker-point-bounce { animation: none; }
+  .marker-focus-ring { animation: none; opacity: 0.35; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .marker-arrow-in { animation: none; }
 }

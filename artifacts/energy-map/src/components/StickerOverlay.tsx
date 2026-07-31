@@ -317,7 +317,7 @@ export function StickerOverlay({
           <span
             onClick={VIEW_ONLY ? undefined : (e) => { e.stopPropagation(); setLabelDraft(displayName); setEditingLabel(true); }}
             title={VIEW_ONLY ? undefined : 'Click to rename'}
-            className={`block text-[9px] font-semibold text-gray-700 bg-white/85 backdrop-blur-sm rounded px-1 py-px shadow-sm whitespace-nowrap${VIEW_ONLY ? ' pointer-events-none' : ' cursor-pointer hover:text-indigo-600'}`}
+            className={`block text-[13px] font-bold text-gray-800 bg-white/95 backdrop-blur-sm rounded-md px-2 py-0.5 shadow-md whitespace-nowrap${VIEW_ONLY ? ' pointer-events-none' : ' cursor-pointer hover:text-indigo-600'}`}
           >
             {displayName}
           </span>

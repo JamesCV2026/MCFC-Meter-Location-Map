@@ -196,6 +196,8 @@ export function Legend({ stickersByView, onOpenChart, onOpenData, onOpenSavings,
                           type="button"
                           data-testid={`legend-site-panel-${it.id}`}
                           onClick={() => onSelectSite!({ id: it.id, name: it.label })}
+                          onMouseEnter={() => onHoverAsset?.({ stickerName: it.label })}
+                          onMouseLeave={() => onHoverAsset?.(null)}
                           title={`Open ${it.label} panel`}
                           className="w-full flex items-center gap-1 text-left rounded px-1 -mx-1 hover:bg-blue-50/70 transition-colors group"
                         >

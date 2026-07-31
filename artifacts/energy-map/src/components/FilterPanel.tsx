@@ -10,6 +10,9 @@ export interface HighlightTarget {
   type?: AssetType;
   id?: string;
   ids?: string[]; // highlight a specific set of assets (e.g. all of a site's)
+  // Point at a photo STICKER by name instead of a marker (sites like Mamma Mia
+  // or City At Home have no markers — their map presence is the photo circle).
+  stickerName?: string;
 }
 
 interface FilterPanelProps {

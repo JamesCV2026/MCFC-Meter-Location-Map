@@ -178,6 +178,20 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
   // Infrastructure index highlight — hovering a group/item in the FilterPanel
   // lights up the matching markers (and dims the rest).
   const [highlight, setHighlight] = useState<HighlightTarget | null>(null);
+
+  // Which markers the current hover targets (mirrors the overview):
+  //  • centroid — arrows fan outward around a CLUSTER so they never pile up
+  //  • single   — one specific asset gets a 2.5x arrow + pulsing ring
+  const highlightMatches = highlight
+    ? assets.filter((a) => highlight.ids ? highlight.ids.includes(a.id)
+      : highlight.id ? highlight.id === a.id
+      : highlight.type === (a.idno ? 'idno' : a.type))
+    : [];
+  const isSingleHighlight = highlightMatches.length === 1;
+  const highlightCentroid = highlightMatches.length < 2 ? null : {
+    x: highlightMatches.reduce((s, a) => s + a.x, 0) / highlightMatches.length,
+    y: highlightMatches.reduce((s, a) => s + a.y, 0) / highlightMatches.length,
+  };
   // Site → assets index for THIS sub-map's Assets list (resolves the curated
   // group asset names to this sub-map's markers).
   const siteAssetsIndex = useMemo(() => {
@@ -1430,13 +1444,13 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
             // each one represents a significant chunk of campus electrical
             // infrastructure.
             const markerSize = asset.type === 'wind-turbine' ? 70
-              : asset.type === 'building' ? 24
-              : asset.type === 'substation' ? 26
-              : 18;
+              : asset.type === 'building' ? 30
+              : asset.type === 'substation' ? 32
+              : 23;
             const markerIcon = asset.type === 'wind-turbine' ? 62
-              : asset.type === 'building' ? 13
-              : asset.type === 'substation' ? 15
-              : 10;
+              : asset.type === 'building' ? 16
+              : asset.type === 'substation' ? 19
+              : 13;
             return (
               <div
                 key={asset.id}
@@ -1462,16 +1476,51 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
                 onMouseDown={(e) => handleMarkerMouseDown(e, asset.id)}
                 onClick={() => { if (!editMode && !cableMode) handleOpen(asset); }}
               >
-                {matchesHighlight && (
-                  <span className="absolute left-1/2 -translate-x-1/2 pointer-events-none z-20" style={{ bottom: 'calc(100% + 3px)' }} aria-hidden>
-                    <svg className="marker-point-bounce block" width="30" height="26" viewBox="0 0 16 14" style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.5))' }}>
-                      <path d="M8 14 L1.5 2.5 L14.5 2.5 Z" fill={markerColor} stroke="white" strokeWidth="1.6" strokeLinejoin="round" />
-                    </svg>
-                  </span>
-                )}
+                {matchesHighlight && (() => {
+                  let dir: 'left' | 'right' | 'top' | 'bottom' = 'left';
+                  if (highlightCentroid) {
+                    const dx = asset.x - highlightCentroid.x;
+                    const dy = asset.y - highlightCentroid.y;
+                    dir = Math.abs(dx) >= Math.abs(dy) ? (dx >= 0 ? 'right' : 'left') : (dy >= 0 ? 'bottom' : 'top');
+                    // Solar arrays always come in from the right so they don't
+                    // collide with the meter/inverter arrows above and below them.
+                    if (asset.type === 'solar-panel' && !asset.idno) dir = 'right';
+                  }
+                  // One specific asset hovered → 2.5x arrow + pulsing ring.
+                  const big = isSingleHighlight;
+                  const w = big ? 132 : 72;
+                  const h = big ? 88 : 48;
+                  const gap = big ? 11 : 8;
+                  const POS = {
+                    left:   { right: `calc(100% + ${gap}px)`, top: '50%', transform: 'translateY(-50%)' },
+                    right:  { left: `calc(100% + ${gap}px)`, top: '50%', transform: 'translateY(-50%) rotate(180deg)' },
+                    top:    { bottom: `calc(100% + ${gap + 2}px)`, left: '50%', transform: 'translateX(-50%) rotate(90deg)' },
+                    bottom: { top: `calc(100% + ${gap + 2}px)`, left: '50%', transform: 'translateX(-50%) rotate(-90deg)' },
+                  } as const;
+                  return (
+                  <>
+                    {big && (
+                      <span
+                        className="marker-focus-ring absolute left-1/2 top-1/2 pointer-events-none z-10 rounded-full"
+                        style={{ width: markerSize * 2.6, height: markerSize * 2.6, marginLeft: -(markerSize * 1.3), marginTop: -(markerSize * 1.3), border: `3px solid ${markerColor}` }}
+                        aria-hidden
+                      />
+                    )}
+                    <span className="absolute pointer-events-none z-20" style={POS[dir]} aria-hidden>
+                      <svg className="marker-arrow-in block" width={w} height={h} viewBox="0 0 60 40" style={{ filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.45))' }}>
+                        <path d="M2 13 H38 V6 L58 20 L38 34 V27 H2 Z" fill="#111827" stroke="white" strokeWidth="2.5" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                  </>
+                  );
+                })()}
                 <button
                   className="relative flex items-center justify-center focus:outline-none"
-                  style={{ width: markerSize, height: markerSize }}
+                  style={{ width: markerSize, height: markerSize,
+                      // The marker the hover arrow points at grows 50% so the
+                      // eye lands on it, not just the arrow.
+                      transform: matchesHighlight ? 'scale(1.5)' : undefined,
+                      transition: 'transform 0.18s cubic-bezier(0.22, 1, 0.36, 1)' }}
                   aria-label={asset.name}
                   tabIndex={editMode ? -1 : 0}
                 >

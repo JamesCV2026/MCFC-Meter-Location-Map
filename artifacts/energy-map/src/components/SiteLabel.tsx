@@ -137,7 +137,7 @@ export function SiteLabel({ site, mapRef, onClick, onUpdate, active = false, lab
         <button
           data-style="tag"
           onClick={() => onClick(site)}
-          className={`backdrop-blur-sm border rounded-full px-2 py-0.5 shadow-sm transition-all duration-150 whitespace-nowrap text-[10px] font-semibold leading-tight ${
+          className={`backdrop-blur-sm border rounded-full px-3 py-1 shadow-sm transition-all duration-150 whitespace-nowrap text-[13px] font-bold leading-tight ${
             active
               ? 'bg-blue-600 border-blue-700 text-white shadow-md shadow-blue-200'
               : 'bg-white/90 border-gray-200 text-gray-800 hover:bg-white hover:border-blue-300 cursor-default'
@@ -149,22 +149,22 @@ export function SiteLabel({ site, mapRef, onClick, onUpdate, active = false, lab
         /* ── Pin style (default) — full pill with map-pin icon + zoom chevron */
         <button
           onClick={() => onClick(site)}
-          className={`group flex items-center gap-1.5 border rounded-lg px-2.5 py-1.5 shadow-sm transition-all duration-150 cursor-pointer whitespace-nowrap ${
+          className={`group flex items-center gap-1.5 border rounded-lg px-2.5 py-1.5 shadow-md transition-all duration-150 cursor-pointer whitespace-nowrap ${
             active
               ? 'bg-emerald-700 border-emerald-800 text-white shadow-md'
               : 'bg-emerald-600 border-emerald-700 text-white hover:bg-emerald-500'
           }`}
           aria-label={active ? `Zoom out from ${site.name}` : `Zoom to ${site.name}`}
         >
-          <MapPin size={11} className="text-white/90 shrink-0" />
-          <span className="text-[11px] font-semibold leading-none text-white">
+          <MapPin size={12} className="text-white/90 shrink-0" />
+          <span className="text-[12px] font-bold leading-none text-white">
             {site.name}
           </span>
           {site.subMapId
-            ? <ArrowRight size={10} className="text-white/80 group-hover:text-white transition-colors shrink-0 ml-0.5" />
+            ? <ArrowRight size={11} className="text-white/80 group-hover:text-white transition-colors shrink-0 ml-0.5" />
             : active
-              ? <ZoomOut size={10} className="text-white/80 shrink-0 ml-0.5" />
-              : <ZoomIn size={10} className="text-white/80 group-hover:text-white transition-colors shrink-0 ml-0.5" />
+              ? <ZoomOut size={11} className="text-white/80 shrink-0 ml-0.5" />
+              : <ZoomIn size={11} className="text-white/80 group-hover:text-white transition-colors shrink-0 ml-0.5" />
           }
         </button>
       )}
@@ -173,8 +173,8 @@ export function SiteLabel({ site, mapRef, onClick, onUpdate, active = false, lab
           users know the campus blobs are interactive. Only on non-edit,
           navigable (sub-map) pills that aren't already zoomed in. */}
       {!labelEditMode && site.style !== 'tag' && site.subMapId && !active && (
-        <div className="hint-nudge absolute left-1/2 top-full mt-1 pointer-events-none flex items-center gap-1 whitespace-nowrap rounded-full bg-white/95 border border-emerald-200 px-2 py-0.5 shadow-md text-[9px] font-bold text-emerald-700">
-          <MousePointerClick size={10} className="text-emerald-600 shrink-0" />
+        <div className="hint-nudge absolute left-1/2 top-full mt-1 pointer-events-none flex items-center gap-1 whitespace-nowrap rounded-full bg-white/95 border border-emerald-200 px-2 py-0.5 shadow-md text-[10px] font-bold text-emerald-700">
+          <MousePointerClick size={11} className="text-emerald-600 shrink-0" />
           Click to explore
         </div>
       )}
