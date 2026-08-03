@@ -387,25 +387,7 @@ export function EnergyMap() {
       const raw = localStorage.getItem(FRAMING_KEY);
       const f = raw ? JSON.parse(raw) : null;
       if (!f || typeof f.zoom !== 'number' || f.zoom <= 1) {
-        // No saved framing. On WIDE monitors the full view reads barren and
-        // zoomed-out, so default to a gentle zoom onto the content band —
-        // laptops (< 1700px) keep the familiar full view.
-        if (window.innerWidth >= 1700) {
-          const Z = 1.25;
-          setMapZoom(Z);
-          timer = setTimeout(() => {
-            const el = mapRef.current;
-            if (el) {
-              const r = el.getBoundingClientRect();
-              // Keep the CROPPED frame's centre (54%, 60% of the canvas)
-              // fixed while zooming about the canvas centre.
-              if (r.width) setMapPan({ x: (0.54 - 0.5) * r.width * (1 - Z), y: (0.60 - 0.5) * r.height * (1 - Z) });
-            }
-            framingLoaded.current = true;
-          }, 150);
-        } else {
-          framingLoaded.current = true;
-        }
+        framingLoaded.current = true;
       } else {
         setMapZoom(f.zoom);
         // Pan lands a beat later so the zoom-change clamp (which can measure a

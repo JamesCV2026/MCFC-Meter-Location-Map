@@ -1,4 +1,5 @@
-// AUTO-GENERATED from "Generation savings.xlsx" (25-year annual savings, GBP).
+// AUTO-GENERATED from "CFG_MCFC_100pct_SelfConsumption.xlsx" (25-year annual
+// savings, GBP, 100% self-consumption scenario).
 // Edit METHODOLOGY below for the narrative shown above each savings table.
 
 export interface AssetSavings {
@@ -6,35 +7,22 @@ export interface AssetSavings {
   years: number[];      // annual savings, year 1..25
 }
 
-export const SAVINGS_METHODOLOGY = `We take the amount of solar electricity the site will generate each year, work out how much of that is used on site and how much is exported, and then compare the cost of buying that electricity under the PPA against what the same electricity would cost from the grid. The difference is the saving. We run that comparison year by year across the full 25-year term, allowing for the PPA price rising 3% a year while grid prices rise 8% a year. The figures below show the result for each site and for the portfolio as a whole.`;
+export const SAVINGS_METHODOLOGY = `We take the amount of solar electricity the site generates each year, assume it is all used on site, and compare the cost of buying that electricity under the PPA against what the same electricity would cost from the grid. The difference is the saving. We run that comparison year by year across the full 25-year term, allowing for the PPA price rising 3% a year while grid prices rise 8% a year. The figures below show the result for each site and for the portfolio as a whole.`;
 
 // One-line version for tight spaces (e.g. the summary panel headline).
 export const SAVINGS_METHODOLOGY_BRIEF = `The saving is the gap between the site's solar electricity under the PPA and the same power bought from the grid, projected year by year over 25 years (PPA +3%/yr vs grid +8%/yr).`;
 
-export const SAVINGS_METHODOLOGY_FULL = `Generation data varies by phase: Phase 1 (Joie Stadium, Indoor Pitch, TV Studio, FM Building) uses actual metered generation data, while Phases 2 (Ground Mount, Womens) and 3 (Hotel, Commercial, Towers) use modelled generation profiles. For each site, generation is split between on-site consumption (90% for Phases 1 and 2, 100% for Phase 3) and any exported surplus.
-
-Savings are calculated on a year-by-year basis over the full 25-year PPA term. In each year, the cost of solar electricity under the PPA is compared against the cost of purchasing the same electricity from the grid:
-
-Annual PPA cost = On-site generation consumed × PPA rate
-(starting at 15.5p/kWh, escalating at 3% per year)
-
-Annual avoided grid cost = On-site generation consumed × grid rate
-(starting at 21.8p/kWh, escalating at 8% per year)
-
-Annual saving = Avoided grid cost + Export income − PPA cost
-
-Because the grid rate is assumed to escalate faster than the PPA rate (8% vs 3% per year), the gap between the two widens each year, meaning annual savings grow over the life of the agreement. Summing each year's saving gives the cumulative 25-year savings position for each site and for the portfolio as a whole.`;
 
 const SAVINGS: Record<string, number[]> = {
-  'joie-stadium': [40518, 48735, 57729, 67112, 77405, 89129, 101912, 115542, 130408, 146608, 164364, 183673, 204657, 227446, 252184, 279022, 308126, 339671, 373849, 410864, 451107, 494643, 541730, 592642, 647675],
-  'indoor-pitch': [28568, 34362, 40704, 47319, 54576, 62843, 71856, 81466, 91947, 103369, 115889, 129503, 144298, 160367, 177809, 196732, 217252, 239494, 263592, 289690, 318064, 348761, 381960, 417857, 456660],
-  'tv-studio': [843, 1014, 1201, 1396, 1611, 1855, 2121, 2404, 2714, 3051, 3420, 3822, 4259, 4733, 5248, 5806, 6412, 7068, 7779, 8549, 9387, 10293, 11272, 12332, 13477],
-  'fm-building': [4265, 5130, 6076, 7064, 8147, 9382, 10727, 12162, 13726, 15432, 17301, 19333, 21542, 23941, 26544, 29369, 32433, 35753, 39351, 43247, 47483, 52065, 57022, 62380, 68173],
-  'ground-mount': [14991, 18031, 21358, 24830, 28638, 32976, 37705, 42748, 48248, 54241, 60811, 67955, 75718, 84150, 93302, 103232, 113999, 125670, 138315, 152010, 166899, 183006, 200427, 219263, 239624],
-  'womens': [2619, 3151, 3732, 4338, 5004, 5762, 6588, 7469, 8430, 9478, 10625, 11874, 13230, 14703, 16303, 18038, 19919, 21958, 24168, 26561, 29162, 31977, 35021, 38312, 41870],
+  'joie-stadium': [47982, 57492, 67874, 79198, 91539, 104979, 119603, 135508, 152794, 171569, 191953, 214070, 238058, 264062, 292242, 322766, 355817, 391594, 430306, 472184, 517471, 566434, 619355, 676542, 738324],
+  'indoor-pitch': [33831, 40536, 47857, 55841, 64542, 74018, 84329, 95543, 107731, 120969, 135341, 150935, 167848, 186184, 206052, 227574, 250878, 276103, 303398, 332925, 364856, 399378, 436692, 477013, 520574],
+  'tv-studio': [998, 1196, 1412, 1648, 1905, 2184, 2489, 2820, 3179, 3570, 3994, 4454, 4954, 5495, 6081, 6716, 7404, 8148, 8954, 9825, 10768, 11786, 12888, 14078, 15364],
+  'fm-building': [5051, 6052, 7144, 8336, 9635, 11050, 12589, 14263, 16083, 18059, 20205, 22533, 25058, 27795, 30761, 33974, 37453, 41218, 45293, 49701, 54468, 59622, 65192, 71212, 77714],
+  'ground-mount': [17752, 21271, 25112, 29301, 33867, 38840, 44250, 50135, 56530, 63477, 71018, 79201, 88076, 97697, 108122, 119416, 131644, 144880, 159203, 174697, 191452, 209567, 229147, 250304, 273160],
+  'womens': [3102, 3717, 4388, 5120, 5918, 6786, 7732, 8760, 9877, 11091, 12409, 13839, 15389, 17071, 18892, 20865, 23002, 25315, 27818, 30525, 33452, 36618, 40039, 43736, 47728],
   'hotel': [5384, 6452, 7617, 8887, 10272, 11780, 13422, 15206, 17146, 19253, 21540, 24022, 26714, 29632, 32795, 36220, 39929, 43944, 48288, 52987, 58069, 63564, 69502, 75920, 82853],
-  'commercial': [4528, 5425, 6405, 7474, 8638, 9906, 11286, 12787, 14418, 16190, 18113, 20201, 22464, 24918, 27577, 30458, 33576, 36952, 40606, 44557, 48831, 53451, 58445, 63841, 69671],
-  'towers': [7478, 8960, 10578, 12342, 14266, 16360, 18639, 21118, 23811, 26737, 29914, 33361, 37099, 41152, 45543, 50300, 55451, 61026, 67059, 73585, 80643, 88273, 96520, 105432, 115060],
+  'commercial': [4528, 5425, 6405, 7474, 8638, 9906, 11286, 12787, 14418, 16190, 18113, 20201, 22464, 24918, 27577, 30458, 33576, 36952, 40606, 44557, 48831, 53451, 58445, 63841, 69674],
+  'towers': [7478, 8960, 10578, 12342, 14266, 16360, 18639, 21118, 23811, 26737, 29914, 33361, 37099, 41152, 45543, 50300, 55451, 61026, 67059, 73585, 80643, 88273, 96520, 105432, 115059],
 };
 
 const NAME_TO_KEY: Record<string, string> = {
@@ -83,7 +71,7 @@ export interface SavingsSummaryRow {
   panelId: string;    // id for the panel's photo / stored overrides
   phase: 1 | 2 | 3;
   actual: boolean;    // Phase 1 uses actual metered generation; 2/3 modelled
-  year1: number;      // Year-1 saving (£, with export income)
+  year1: number;      // Year-1 saving (£)
   total: number;      // 25-year total savings (£)
 }
 

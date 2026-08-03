@@ -1,7 +1,17 @@
-// Comprehensive savings methodology, rendered inside the Savings modal, the
-// marker side panel and the solar panel body. Structured as: the net-savings
-// formula → the rates used → Year-1 inputs per site → export-income
-// sensitivity → the 25-year projection → assumptions & caveats.
+import React from 'react';
+
+// Comprehensive savings methodology — presents the CFG/MCFC 100%
+// self-consumption scenario (no export): formula → rates → per-site inputs &
+// savings (styled like the Savings-by-asset table) → 25-year projection →
+// assumptions & caveats. Source: CFG_MCFC_100pct_SelfConsumption.xlsx.
+
+// Shared palette with the Savings summary / Energy data tables.
+const HEADER_BG = '#1b3a6b';
+const GROUP_BG = '#dbe3ee';
+const ACTUALS_BG = '#eef6f0';
+const MODELLED_BG = '#fdf4e7';
+const ACTUAL_COLOR = '#15803d';
+const MODELLED_COLOR = '#b45309';
 
 function Formula({ title, note }: { title: string; note?: string }) {
   return (
@@ -19,38 +29,42 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 const fmtN = (n: number) => n.toLocaleString('en-GB');
 const fmtGBP = (n: number) => '£' + n.toLocaleString('en-GB');
 
-// Year-1 inputs per site (self-consumed / exported kWh and the resulting net
-// saving). Rates are common to every site: grid 21.80p, PPA 15.50p, export 12.00p.
-const Y1_ROWS = [
-  { site: 'Joie Stadium', self: 685458, exported: 76162, net: 40518 },
-  { site: 'Indoor Pitch', self: 483299, exported: 53700, net: 28568 },
-  { site: 'TV Studio', self: 14263, exported: 1585, net: 843 },
-  { site: 'FM Building', self: 72150, exported: 8017, net: 4265 },
-  { site: 'Ground Mount', self: 253603, exported: 28178, net: 14991 },
-  { site: "Women's", self: 44312, exported: 4924, net: 2619 },
-  { site: 'Hotel', self: 85467, exported: 0, net: 5384 },
-  { site: 'Commercial', self: 71870, exported: 0, net: 4528 },
-  { site: 'Towers', self: 118691, exported: 0, net: 7478 },
-];
+// Per-site inputs & savings — 100% self-consumption scenario.
+interface SiteRow { site: string; kwp: number; gen: number; y1: number; y25: number }
+interface PhaseGroup { label: string; actual: boolean; rows: SiteRow[] }
 
-// Export-income sensitivity: Year 1 and 25-year totals with vs without export.
-const SENSITIVITY_ROWS = [
-  { site: 'Joie Stadium', y1w: 40518, y1n: 31379, w25: 6346752, n25: 6179880 },
-  { site: 'Indoor Pitch', y1w: 28568, y1n: 22124, w25: 4474935, n25: 4357278 },
-  { site: 'TV Studio', y1w: 843, y1n: 653, w25: 132065, n25: 128592 },
-  { site: 'FM Building', y1w: 4265, y1n: 3303, w25: 668048, n25: 650484 },
-  { site: 'Ground Mount', y1w: 14991, y1n: 11609, w25: 2348146, n25: 2286407 },
-  { site: "Women's", y1w: 2619, y1n: 2029, w25: 410291, n25: 399504 },
-  { site: 'Hotel', y1w: 5384, y1n: 5384, w25: 821398, n25: 821398 },
-  { site: 'Commercial', y1w: 4528, y1n: 4528, w25: 690721, n25: 690721 },
-  { site: 'Towers', y1w: 7478, y1n: 7478, w25: 1140706, n25: 1140706 },
+const PHASE_GROUPS: PhaseGroup[] = [
+  {
+    label: 'Phase 1: Actual metered', actual: true,
+    rows: [
+      { site: 'Joie Stadium', kwp: 1218, gen: 769313, y1: 47982, y25: 7319716 },
+      { site: 'Indoor Pitch', kwp: 849.12, gen: 542423, y1: 33831, y25: 5160948 },
+      { site: 'TV Studio', kwp: 21.75, gen: 16008, y1: 998, y25: 152310 },
+      { site: 'FM Building', kwp: 124.41, gen: 80977, y1: 5051, y25: 770461 },
+    ],
+  },
+  {
+    label: 'Phase 2: Modelled', actual: false,
+    rows: [
+      { site: 'Ground Mount', kwp: 352.8, gen: 284627, y1: 17752, y25: 2708119 },
+      { site: "Women's", kwp: 67.16, gen: 49733, y1: 3102, y25: 473189 },
+    ],
+  },
+  {
+    label: 'Phase 3: Modelled', actual: false,
+    rows: [
+      { site: 'Hotel', kwp: 95.63, gen: 86330, y1: 5384, y25: 821398 },
+      { site: 'Commercial', kwp: 90.39, gen: 72596, y1: 4528, y25: 690721 },
+      { site: 'Towers', kwp: 157.2, gen: 119890, y1: 7478, y25: 1140706 },
+    ],
+  },
 ];
-const SENS_TOTAL = { y1w: 109194, y1n: 88487, w25: 17033062, n25: 16654970 };
+const ALL_ROWS = PHASE_GROUPS.flatMap((g) => g.rows);
 
-const th = 'px-2 py-1.5 text-left text-[10px] font-bold text-gray-500 uppercase tracking-wide whitespace-nowrap';
+const th = 'px-3 py-2 text-left text-[11px] font-semibold text-white whitespace-nowrap';
 const thR = th + ' text-right';
-const td = 'px-2 py-1.5 text-[12px] text-gray-700 whitespace-nowrap';
-const tdR = td + ' text-right tabular-nums';
+const td = 'px-3 py-1.5 text-[12px] text-gray-700 whitespace-nowrap';
+const tdR = td + ' text-right font-mono tabular-nums';
 
 export function SavingsMethodologyBody() {
   return (
@@ -59,11 +73,12 @@ export function SavingsMethodologyBody() {
       {/* ── 1. The formula ── */}
       <SectionTitle>How a saving is calculated</SectionTitle>
       <p>
-        Each site's saving is the value of grid electricity it avoids buying, less the small loss on any
-        surplus exported at below the PPA rate:
+        Each site's saving is the value of the grid electricity it avoids buying: the gap between the grid
+        rate and the PPA rate on every unit generated and used on site:
       </p>
       <Formula
-        title="Net saving = [Self-consumed × (Grid rate − PPA rate)] − [Exported × (PPA rate − Export rate)]"
+        title="Net saving = Generated kWh × (Grid rate − PPA rate)"
+        note="100% self-consumption scenario, all generation is assumed used on site"
       />
 
       {/* ── 2. The rates ── */}
@@ -76,15 +91,10 @@ export function SavingsMethodologyBody() {
               <td className={tdR}><b>21.80p/kWh</b></td>
               <td className={td + ' text-gray-400'}>escalating 8% per year</td>
             </tr>
-            <tr className="border-b border-gray-100">
+            <tr>
               <td className={td}>PPA rate</td>
               <td className={tdR}><b>15.50p/kWh</b></td>
               <td className={td + ' text-gray-400'}>escalating 3% per year</td>
-            </tr>
-            <tr>
-              <td className={td}>Export rate</td>
-              <td className={tdR}><b>12.00p/kWh</b></td>
-              <td className={td + ' text-gray-400'}>applied to exported surplus</td>
             </tr>
           </tbody>
         </table>
@@ -92,36 +102,56 @@ export function SavingsMethodologyBody() {
       <p>
         Generation data varies by phase: Phase 1 (Joie Stadium, Indoor Pitch, TV Studio, FM Building) uses
         actual metered generation; Phases 2 (Ground Mount, Women's) and 3 (Hotel, Commercial, Towers) use
-        modelled profiles. Generation is split 90% self-consumed / 10% exported for Phases 1 and 2, and
-        100% self-consumed for Phase 3.
+        modelled profiles. All phases are treated as 100% self-consuming.
       </p>
 
-      {/* ── 3. Year-1 inputs per site ── */}
-      <SectionTitle>Year-1 inputs by site</SectionTitle>
-      <div className="rounded-lg border border-gray-200 overflow-x-auto">
+      {/* ── 3. Inputs & savings by site ── */}
+      <SectionTitle>Inputs &amp; savings by site</SectionTitle>
+      <div className="rounded-lg border border-gray-200 shadow-sm overflow-x-auto">
         <table className="w-full border-collapse">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
+          <thead>
+            <tr style={{ background: HEADER_BG }}>
               <th className={th}>Site</th>
-              <th className={thR}>Self-consumed kWh</th>
-              <th className={thR}>Exported kWh</th>
-              <th className={thR}>Net £ (Y1)</th>
+              <th className={thR}>Array kWp</th>
+              <th className={thR}>Annual Generated kWh</th>
+              <th className={thR}>Year-1 savings</th>
+              <th className={thR}>25-year savings</th>
             </tr>
           </thead>
           <tbody>
-            {Y1_ROWS.map((r) => (
-              <tr key={r.site} className="border-b border-gray-100 last:border-0">
-                <td className={td}>{r.site}</td>
-                <td className={tdR}>{fmtN(r.self)}</td>
-                <td className={tdR}>{r.exported ? fmtN(r.exported) : '—'}</td>
-                <td className={tdR + ' font-semibold text-gray-900'}>{fmtGBP(r.net)}</td>
-              </tr>
+            {PHASE_GROUPS.map((g) => (
+              <React.Fragment key={g.label}>
+                <tr style={{ background: GROUP_BG }}>
+                  <td colSpan={5} className="px-3 py-1.5 font-bold uppercase tracking-wide text-[11px]" style={{ color: HEADER_BG }}>
+                    {g.label}
+                  </td>
+                </tr>
+                {g.rows.map((r) => (
+                  <tr key={r.site} className="border-b border-gray-100 hover:bg-blue-50/50 transition-colors">
+                    <td className={td}>{r.site}</td>
+                    <td className={tdR}>{r.kwp.toLocaleString('en-GB')}</td>
+                    <td className={tdR}>{fmtN(r.gen)}</td>
+                    <td className={tdR}>{fmtGBP(r.y1)}</td>
+                    <td className={tdR + ' font-semibold text-gray-900'}>{fmtGBP(r.y25)}</td>
+                  </tr>
+                ))}
+                <tr style={{ background: g.actual ? ACTUALS_BG : MODELLED_BG }}>
+                  <td colSpan={2} className="px-3 py-1.5 font-bold whitespace-nowrap" style={{ color: g.actual ? ACTUAL_COLOR : MODELLED_COLOR }}>
+                    Subtotal ({g.actual ? 'Actual' : 'Modelled'})
+                  </td>
+                  <td className={tdR + ' font-bold'} style={{ color: g.actual ? ACTUAL_COLOR : MODELLED_COLOR }}>{fmtN(g.rows.reduce((s, r) => s + r.gen, 0))}</td>
+                  <td className={tdR + ' font-bold'} style={{ color: g.actual ? ACTUAL_COLOR : MODELLED_COLOR }}>{fmtGBP(g.rows.reduce((s, r) => s + r.y1, 0))}</td>
+                  <td className={tdR + ' font-bold'} style={{ color: g.actual ? ACTUAL_COLOR : MODELLED_COLOR }}>{fmtGBP(g.rows.reduce((s, r) => s + r.y25, 0))}</td>
+                </tr>
+              </React.Fragment>
             ))}
-            <tr className="bg-gray-50 border-t border-gray-200">
-              <td className={td + ' font-bold text-gray-900'}>Portfolio</td>
-              <td className={tdR + ' font-semibold'}>{fmtN(Y1_ROWS.reduce((s, r) => s + r.self, 0))}</td>
-              <td className={tdR + ' font-semibold'}>{fmtN(Y1_ROWS.reduce((s, r) => s + r.exported, 0))}</td>
-              <td className={tdR + ' font-bold text-gray-900'}>{fmtGBP(Y1_ROWS.reduce((s, r) => s + r.net, 0))}</td>
+            <tr style={{ background: HEADER_BG }}>
+              <td colSpan={2} className="px-3 py-2 text-white font-bold uppercase tracking-wide text-[11px]">
+                Grand total
+              </td>
+              <td className={tdR + ' font-bold'} style={{ color: 'white' }}>{fmtN(ALL_ROWS.reduce((s, r) => s + r.gen, 0))}</td>
+              <td className={tdR + ' font-bold'} style={{ color: 'white' }}>{fmtGBP(ALL_ROWS.reduce((s, r) => s + r.y1, 0))}</td>
+              <td className={tdR + ' font-bold'} style={{ color: 'white' }}>{fmtGBP(ALL_ROWS.reduce((s, r) => s + r.y25, 0))}</td>
             </tr>
           </tbody>
         </table>
@@ -136,21 +166,13 @@ export function SavingsMethodologyBody() {
         year gives the cumulative 25-year position for every site and the portfolio.
       </p>
 
-      {/* ── 5. Export sensitivity ── */}
-      <SectionTitle>Sensitivity: value of export income</SectionTitle>
-      <p>
-        Export income is a modest share of the total: excluding it entirely would reduce the portfolio's
-        Year-1 saving from £109,194 to £88,487, and the 25-year total from £17,033,062 to £16,654,970 —
-        a difference of about 2%.
-      </p>
-
-      {/* ── 6. Assumptions & caveats ── */}
+      {/* ── 5. Assumptions & caveats ── */}
       <SectionTitle>Assumptions &amp; caveats</SectionTitle>
       <ul className="list-disc pl-5 space-y-1 text-[13px]">
-        <li>Self-consumption is assumed at 90% for Phases 1 and 2. Metered data suggests actual export
-          shares may be higher than assumed; further half-hourly analysis is required to refine the split.</li>
-        <li>Phase 3 sites are treated as 100% self-consuming (no export income assumed).</li>
-        <li>Rate escalators (grid 8%, PPA 3%) are assumptions held constant across the full term.</li>
+        <li>This scenario assumes 100% self-consumption, so every generated unit displaces grid purchase and
+          nothing is exported. Any actual export (sold below the PPA rate) would reduce these figures;
+          half-hourly analysis is required to establish the true split.</li>
+        <li>Rate escalators (grid 8%, PPA 3%) are assumptions held constant across the full 25-year term.</li>
         <li>Phase 2 and 3 generation is modelled, not metered; figures will be trued up as sites are
           commissioned and metered.</li>
       </ul>

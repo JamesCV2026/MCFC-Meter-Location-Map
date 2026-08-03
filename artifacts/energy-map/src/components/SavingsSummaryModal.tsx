@@ -142,7 +142,7 @@ export function SavingsSummaryModal({ open, onClose, onSelectSite }: Props) {
                       <th className="text-left px-3 py-2 text-white font-semibold">Asset (click to open)</th>
                       <th className="text-left px-3 py-2 text-white font-semibold whitespace-nowrap">Data type</th>
                       <th className="text-left px-3 py-2 text-white font-semibold hidden sm:table-cell whitespace-nowrap">Share of total savings</th>
-                      <th className="text-right px-3 py-2 text-white font-semibold whitespace-nowrap">Year 1 savings (with export)</th>
+                      <th className="text-right px-3 py-2 text-white font-semibold whitespace-nowrap">Year 1 savings</th>
                       <th className="text-right px-3 py-2 text-white font-semibold whitespace-nowrap">25-year savings</th>
                     </tr>
                   </thead>
