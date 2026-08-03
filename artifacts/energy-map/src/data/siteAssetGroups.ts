@@ -37,7 +37,7 @@ export const SITE_ASSET_GROUPS: SiteAssetGroup[] = [
 
   // ── Etihad Stadium Campus ────────────────────────────────────────────────
   { id: 'etihad-site-stadium', name: 'Etihad Stadium', submap: 'etihad-stadium-map',
-    assetNames: ['Behind the Meter 1', 'Behind the Meter 2'] },
+    assetNames: ['MPAN 1', 'MPAN 2'] },
   { id: 'etihad-site-hotel', name: 'Hotel', submap: 'etihad-stadium-map',
     assetNames: ['Hotel Solar Array', 'Behind the Meter 3'] },
   { id: 'etihad-site-commercial', name: 'Commercial', submap: 'etihad-stadium-map',

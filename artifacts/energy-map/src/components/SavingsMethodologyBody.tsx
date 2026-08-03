@@ -26,7 +26,7 @@ export function SavingsMethodologyBody() {
       </p>
       <div className="space-y-2">
         <Formula title="Annual PPA cost = On-site generation consumed × PPA rate" note="starting at 15.5p/kWh, escalating at 3% per year" />
-        <Formula title="Annual avoided grid cost = On-site generation consumed × grid rate" note="starting at 21.8p/kWh, escalating at 8% per year" />
+        <Formula title="Annual avoided grid cost = On-site generation consumed × grid rate" note="starting at 24p/kWh, escalating at 8% per year" />
         <Formula title="Annual saving = Avoided grid cost + Export income − PPA cost" />
       </div>
       <p>

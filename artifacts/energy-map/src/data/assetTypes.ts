@@ -59,6 +59,7 @@ export const ALL_ASSET_TYPES = Object.keys(assetTypeConfig) as AssetType[];
 // ---------------------------------------------------------------------------
 export const ENABLED_TYPES: AssetType[] = [
   'meter-behind',
+  'mpan',
   'meter-front',
   'inverter',
   'solar-panel',

@@ -29,6 +29,8 @@ import { submaps } from '@/data/submaps';
 import { SITE_ASSET_GROUPS } from '@/data/siteAssetGroups';
 import { panelInfoFor } from '@/data/panelInfo';
 import { arrowDirOverride } from '@/data/arrowDirections';
+import { hoverTargetFor } from '@/data/siteHoverTargets';
+import { HoverTargetHandles } from './HoverTargetHandles';
 import { RegionBox } from './RegionBox';
 import { loadSubMapRegions, saveSubMapRegions, SubMapRegion } from '@/data/submapRegions';
 import mapImage from '@assets/Overview_1779198593346.png';
@@ -173,6 +175,18 @@ function savePositions(positions: Record<string, { x: number; y: number }>) {
 function mergePositions(base: EnergyAsset[]): EnergyAsset[] {
   const saved = loadPositions();
   return base.map((a) => saved[a.id] ? { ...a, ...saved[a.id] } : a);
+}
+
+
+// Loose match between a Legend site name and a marker/sticker name — the two
+// don't always agree exactly ("Mamma Mia studio" vs "Mamma Mia Theatre",
+// "Etihad Towers" vs "Etihad Towers Solar Array").
+function matchesSiteName(want: string, name: string): boolean {
+  const norm = (v: string) => v.trim().toLowerCase()
+    .replace(/\b(building|theatre|studio|centre|center|solar|array|the)\b/g, '')
+    .replace(/\s+/g, ' ').trim();
+  const a = norm(want), b = norm(name);
+  return !!a && !!b && (a === b || a.startsWith(b) || b.startsWith(a));
 }
 
 const MIN_ZOOM = 1;
@@ -2140,10 +2154,32 @@ export function EnergyMap() {
               />
             ))}
 
+{(() => {
+              // Prefer the LIVE sticker position (follows drags); the static
+              // coordinate in siteHoverTargets.ts is only the fallback for
+              // sites with no sticker on this view (North Stand, Walkways).
+              const tgt = (() => {
+                if (!highlight?.stickerName) return undefined;
+                const hit = stickerLib.placed.find(({ sticker }) =>
+                  matchesSiteName(highlight.stickerName!, panelInfoFor(sticker.id).title ?? sticker.label));
+                if (hit) return { x: hit.placement.x, y: hit.placement.y };
+                return hoverTargetFor(highlight.stickerName, 'main');
+              })();
+              if (!tgt) return null;
+              return (
+                <span className="absolute pointer-events-none z-30" style={{ left: `${tgt.x}%`, top: `${tgt.y}%`, transform: 'translate(-50%, -50%)' }} aria-hidden>
+                  <span className="absolute" style={{ right: 'calc(100% + 16px)', top: '50%', transform: 'translateY(-50%)' }}>
+                    <svg className="marker-arrow-in block" width="132" height="88" viewBox="0 0 60 40" style={{ filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.45))' }}>
+                      <path d="M2 13 H38 V6 L58 20 L38 34 V27 H2 Z" fill="#111827" stroke="white" strokeWidth="2.5" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                </span>
+              );
+            })()}
             {/* Hover arrow for photo-sticker sites (Mamma Mia, City At Home,
                 North Stand …) — they have no markers, so the arrow points at
                 the sticker circle itself. */}
-            {highlight?.stickerName && !stickersHidden && (() => {
+            {highlight?.stickerName && !stickersHidden && !hoverTargetFor(highlight.stickerName, 'main') && (() => {
               // Legend names and sticker labels don't always match exactly
               // ("Mamma Mia studio" vs "Mamma Mia Theatre"), so compare on the
               // significant words and accept a prefix/containment match.
@@ -2316,6 +2352,9 @@ export function EnergyMap() {
               );
             })()}
 
+            {/* Draggable crosshairs for the hover-arrow targets (Move labels mode) */}
+            {labelEditMode && <HoverTargetHandles view="main" mapRef={mapRef} zoom={zoomScale} />}
+
             {/* Site labels — hidden in marker-edit mode, or when labels are toggled off */}
             {!editMode && (!labelsHidden || labelEditMode || addLabelMode) && siteState.map((site) => (
               <SiteLabel
@@ -2370,6 +2409,9 @@ export function EnergyMap() {
               const matchesHighlight = highlight
                 ? (highlight.ids ? highlight.ids.includes(asset.id)
                     : highlight.id ? highlight.id === asset.id
+                    // A site row hover (stickerName) also points at a MARKER of
+                    // that name — e.g. "Etihad Towers" arrows its solar array.
+                    : highlight.stickerName ? matchesSiteName(highlight.stickerName, panelInfoFor(asset.id).title ?? asset.name)
                     : highlight.type === (asset.idno ? 'idno' : asset.type))
                 : false;
               const dimmed = highlight != null && !matchesHighlight;

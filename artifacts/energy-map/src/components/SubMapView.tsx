@@ -17,12 +17,25 @@ import { AssetInfoPanel } from './AssetInfoPanel';
 import { useStickerLibrary, stickerToPanelItem, assetToPanelItem } from '@/data/stickerLibrary';
 import { panelInfoFor } from '@/data/panelInfo';
 import { arrowDirOverride } from '@/data/arrowDirections';
+import { hoverTargetFor } from '@/data/siteHoverTargets';
+import { HoverTargetHandles } from './HoverTargetHandles';
 import { FilterPanel, HighlightTarget } from './FilterPanel';
 import { groupsForSubmap } from '@/data/siteAssetGroups';
 import { Legend } from './Legend';
 import { ServicesDuctOverlay } from './ServicesDuctOverlay';
 import { VIEW_ONLY } from '@/viewOnly';
 import clearvoltLogo from '@/assets/clearvolt-logo.png';
+
+
+// Loose match between a Legend site name and a marker/sticker name — the two
+// don't always agree exactly ("Etihad Towers" vs "Etihad Towers Solar Array").
+function matchesSiteName(want: string, name: string): boolean {
+  const norm = (v: string) => v.trim().toLowerCase()
+    .replace(/\b(building|theatre|studio|centre|center|solar|array|the)\b/g, '')
+    .replace(/\s+/g, ' ').trim();
+  const a = norm(want), b = norm(name);
+  return !!a && !!b && (a === b || a.startsWith(b) || b.startsWith(a));
+}
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 4;
@@ -1429,6 +1442,29 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
           })()}
 
           {/* MPAN markers */}
+{labelEditMode && <HoverTargetHandles view={subMapId} mapRef={mapRef} zoom={mapZoom} />}
+            {(() => {
+              // Prefer the LIVE sticker position (follows drags); the static
+              // coordinate in siteHoverTargets.ts is only the fallback for
+              // sites with no sticker on this view (North Stand, Walkways).
+              const tgt = (() => {
+                if (!highlight?.stickerName) return undefined;
+                const hit = stickerLib.placed.find(({ sticker }) =>
+                  matchesSiteName(highlight.stickerName!, panelInfoFor(sticker.id).title ?? sticker.label));
+                if (hit) return { x: hit.placement.x, y: hit.placement.y };
+                return hoverTargetFor(highlight.stickerName, subMapId);
+              })();
+              if (!tgt) return null;
+              return (
+                <span className="absolute pointer-events-none z-30" style={{ left: `${tgt.x}%`, top: `${tgt.y}%`, transform: 'translate(-50%, -50%)' }} aria-hidden>
+                  <span className="absolute" style={{ right: 'calc(100% + 16px)', top: '50%', transform: 'translateY(-50%)' }}>
+                    <svg className="marker-arrow-in block" width="132" height="88" viewBox="0 0 60 40" style={{ filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.45))' }}>
+                      <path d="M2 13 H38 V6 L58 20 L38 34 V27 H2 Z" fill="#111827" stroke="white" strokeWidth="2.5" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                </span>
+              );
+            })()}
           {assets.filter((a) => visibleTypes.has(a.idno ? 'idno' : a.type)).map((asset) => {
             const isHovered = hoveredId === asset.id;
             const isDragging = draggingRef.current?.id === asset.id;
@@ -1441,6 +1477,9 @@ export function SubMapView({ subMapId, originX = 50, originY = 50, onBack }: Sub
             const matchesHighlight = highlight
               ? (highlight.ids ? highlight.ids.includes(asset.id)
                   : highlight.id ? highlight.id === asset.id
+                  // A site row hover also points at a MARKER of that name —
+                  // e.g. "Etihad Towers" arrows its solar array.
+                  : highlight.stickerName ? matchesSiteName(highlight.stickerName, panelInfoFor(asset.id).title ?? asset.name)
                   : highlight.type === (asset.idno ? 'idno' : asset.type))
               : false;
             const dimmed = highlight != null && !matchesHighlight;
