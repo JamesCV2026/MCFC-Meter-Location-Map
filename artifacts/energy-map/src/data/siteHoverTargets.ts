@@ -24,6 +24,11 @@ export const SITE_HOVER_TARGETS: Record<string, HoverTarget[]> = {
     { view: 'main', x: 41, y: 42 },
     { view: 'etihad-stadium-map', x: 52, y: 34 },
   ],
+
+  'Etihad Walkways': [
+    { view: 'main', x: 37, y: 57 },
+    { view: 'etihad-stadium-map', x: 44, y: 60 },
+  ],
 };
 
 // ── User-adjustable positions ───────────────────────────────────────────────

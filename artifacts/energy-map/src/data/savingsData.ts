@@ -19,7 +19,7 @@ Annual PPA cost = On-site generation consumed × PPA rate
 (starting at 15.5p/kWh, escalating at 3% per year)
 
 Annual avoided grid cost = On-site generation consumed × grid rate
-(starting at 24p/kWh, escalating at 8% per year)
+(starting at 21.8p/kWh, escalating at 8% per year)
 
 Annual saving = Avoided grid cost + Export income − PPA cost
 
