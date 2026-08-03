@@ -232,12 +232,12 @@ export function SiteLabel({ site, mapRef, onClick, onUpdate, active = false, lab
           <button
             type="button"
             onClick={(e) => { if (!labelEditMode) { e.stopPropagation(); onClick(site); } }}
-            className={`explore-pill relative overflow-hidden flex items-center gap-2 whitespace-nowrap rounded-full bg-emerald-500 border-2 border-white px-4 py-2 shadow-xl text-[16px] font-extrabold text-white ${labelEditMode ? 'ring-2 ring-offset-1 ring-indigo-400 cursor-grab' : 'ring-2 ring-offset-1 ring-indigo-400/80 cursor-pointer'}`}
+            className={`explore-pill relative overflow-hidden flex items-center gap-2 whitespace-nowrap rounded-full bg-emerald-500 border-2 border-white px-3.5 py-1.5 shadow-xl text-[14px] font-extrabold text-white ${labelEditMode ? 'ring-2 ring-offset-1 ring-indigo-400 cursor-grab' : 'ring-2 ring-offset-1 ring-indigo-400/80 cursor-pointer'}`}
             aria-label={`Explore ${site.name}`}
           >
-            <span className="relative flex items-center justify-center shrink-0" style={{ width: 19, height: 19 }}>
+            <span className="relative flex items-center justify-center shrink-0" style={{ width: 17, height: 17 }}>
               <span className="click-ripple absolute inset-0 rounded-full border-2 border-white" aria-hidden />
-              <MousePointerClick size={19} className="text-white shrink-0 click-tap relative" />
+              <MousePointerClick size={17} className="text-white shrink-0 click-tap relative" />
             </span>
             Click to explore
             <span className="explore-sheen" aria-hidden />

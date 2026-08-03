@@ -26,9 +26,13 @@ const GEN_GROUPS: GroupDef[] = [
   { name: 'Wind Turbine', color: '#15803d', match: ['Wind Turbine (6.2 MW)'] },
   // Solar phases — tagged "- Solar" and forced to a side leader label (never an
   // in-box label) so they read as solar, distinct from the wind block.
-  { name: 'Phase 1 - Solar', color: '#22c55e', match: ['Joie Stadium', 'FM Building', 'TV Studio', 'Performance Centre'], leader: true },
+  { name: 'Phase 1 - Solar', color: '#22c55e', match: ['Joie Stadium', 'FM Building', 'TV Studio', 'Indoor Pitch (Performance Centre)', 'Performance Centre'], leader: true },
   { name: 'Phase 2 - Solar', color: '#84cc16', match: ['MCWFC Building', 'Phase 2A Ground Mount'], leader: true },
   { name: 'Phase 3 - Solar', color: '#0d9488', match: ['Etihad North Stand Commercial', 'Etihad North Stand Hotel', 'Etihad Towers'], leader: true },
+  // Co-op Live sits outside the phased solar programme, but it IS in the
+  // Energy Data table's generation total — charting it keeps the two views
+  // reconciled (chart total == table Grand Total).
+  { name: 'Co-op Live Arena', color: '#059669', match: ['Co-op Live Arena'], leader: true },
 ];
 
 interface Segment { name: string; value: number; color: string; leader?: boolean; }
@@ -240,7 +244,7 @@ export function EnergyBarChartModal({ open, onClose, consumption, generation }: 
 
         <div className="flex gap-10 px-6 pt-3 pb-2 justify-center flex-wrap">
           <Legend title="Consumption" segs={consSegs} total={consTotal} />
-          <Legend title="Generation" segs={genSegs} total={genTotal} />
+          <Legend title="Green Generation" segs={genSegs} total={genTotal} />
         </div>
 
         {/* Tiny breakdown of what each generation phase contains — kept light
@@ -248,7 +252,7 @@ export function EnergyBarChartModal({ open, onClose, consumption, generation }: 
         <div className="px-6 pb-3">
           <p className="text-[10px] leading-snug text-gray-400">
             <span className="font-semibold text-gray-500">Solar phases.</span>
-            {' '}Phase 1: Joie Stadium, Performance Centre, FM Building, TV Studio ·
+            {' '}Phase 1: Joie Stadium, Indoor Pitch (Performance Centre), FM Building, TV Studio ·
             {' '}Phase 2: MCWFC, Ground Mount 2A ·
             {' '}Phase 3: NS Commercial, NS Hotel, Etihad Towers
           </p>

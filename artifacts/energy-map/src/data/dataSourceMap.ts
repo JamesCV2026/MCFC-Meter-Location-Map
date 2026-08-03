@@ -188,6 +188,7 @@ const sources: Record<string, DataSourceEntry> = {
   'Joie Stadium Solar Array': { generation: { url: 'data/Generation_Phase1_All_Sites_HH.xlsx', label: 'Phase 1 combined generation — all sites, per string/meter (hourly)' } },
   'Indoor Pitch': { generation: { url: 'data/Generation_Phase1_All_Sites_HH.xlsx', label: 'Phase 1 combined generation — all sites, per string/meter (hourly)' } },
   'Indoor Pitch Solar Array': { generation: { url: 'data/Generation_Phase1_All_Sites_HH.xlsx', label: 'Phase 1 combined generation — all sites, per string/meter (hourly)' } },
+  'Indoor Pitch (Performance Centre)': { generation: { url: 'data/Generation_Phase1_All_Sites_HH.xlsx', label: 'Phase 1 combined generation — all sites, per string/meter (hourly)' } },
   'Performance Centre': { generation: { url: 'data/Generation_Phase1_All_Sites_HH.xlsx', label: 'Phase 1 combined generation — all sites, per string/meter (hourly)' } },
   'Ground Mount Array': { generation: { url: 'data/Generation_Phase2A_Ground_Mount.csv', label: 'Phase 2A Ground Mount generation (hourly modelled)' } },
   'Ground Mount 2A': { generation: { url: 'data/Generation_Phase2A_Ground_Mount.csv', label: 'Phase 2A Ground Mount generation (hourly modelled)' } },

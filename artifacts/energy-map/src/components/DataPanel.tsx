@@ -145,7 +145,7 @@ export const generationData: EnergyRow[] = [
   { group: 'cfa', site: 'FM Building', dataType: 'Actual', kwh: 80977, sourceUrl: DATA.genFmBuilding },
   { group: 'cfa', site: 'TV Studio', dataType: 'Actual', kwh: 16008, sourceUrl: DATA.genTvStudio },
   { group: 'cfa', site: 'Joie Stadium', dataType: 'Actual', kwh: 769313, sourceUrl: DATA.genJoieStadium },
-  { group: 'cfa', site: 'Performance Centre', dataType: 'Actual', kwh: 542423, sourceUrl: DATA.genPerformanceCentre },
+  { group: 'cfa', site: 'Indoor Pitch (Performance Centre)', dataType: 'Actual', kwh: 542423, sourceUrl: DATA.genPerformanceCentre },
   { group: 'cfa', site: 'MCWFC Building', dataType: 'Modelled', kwh: 49733, sourceUrl: DATA.genMcwfc },
   { group: 'cfa', site: 'Phase 2A Ground Mount', dataType: 'Modelled', kwh: 284628, sourceUrl: DATA.genGroundMount2A },
   // Proposed CFA wind turbine — one 6.2 MW machine (candidate locations 1-3).

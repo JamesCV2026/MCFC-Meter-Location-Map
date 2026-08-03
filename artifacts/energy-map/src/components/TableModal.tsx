@@ -23,7 +23,7 @@ const generationData = [
   { site: 'FM Building (Actual)', kwh: 93782 },
   { site: 'Joie Stadium (Actual)', kwh: 995297 },
   { site: 'MCWFC Building (Modelled)', kwh: 49733 },
-  { site: 'Performance Centre (Actual)', kwh: 612425 },
+  { site: 'Indoor Pitch (Performance Centre) (Actual)', kwh: 612425 },
   { site: 'Phase2A Ground Mount (Modelled)', kwh: 284627 },
   { site: 'Phase2B Ground Mount (Modelled)', kwh: 696635 },
   { site: 'TV Studio (Actual)', kwh: 17564 },

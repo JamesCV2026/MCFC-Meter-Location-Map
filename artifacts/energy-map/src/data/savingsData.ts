@@ -88,7 +88,7 @@ export interface SavingsSummaryRow {
 
 export const SAVINGS_SUMMARY: SavingsSummaryRow[] = ([
   { key: 'joie-stadium',  name: 'Joie Stadium',                phase: 1, panelName: 'Joie Stadium',      panelId: 'cfa-site-joie-stadium' },
-  { key: 'indoor-pitch',  name: 'Indoor Pitch (Perf. Centre)', phase: 1, panelName: 'Indoor Pitch',      panelId: 'cfa-site-indoor-pitch' },
+  { key: 'indoor-pitch',  name: 'Indoor Pitch (Performance Centre)', phase: 1, panelName: 'Indoor Pitch',      panelId: 'cfa-site-indoor-pitch' },
   { key: 'fm-building',   name: 'FM Building',                 phase: 1, panelName: 'FM Building',       panelId: 'cfa-site-fm-building' },
   { key: 'tv-studio',     name: 'TV Studio',                   phase: 1, panelName: 'TV Studio',         panelId: 'cfa-site-tv-studio' },
   { key: 'ground-mount',  name: 'Ground Mount (Phase 2A)',     phase: 2, panelName: 'Ground Mount',      panelId: 'ground-mount-2a' },
