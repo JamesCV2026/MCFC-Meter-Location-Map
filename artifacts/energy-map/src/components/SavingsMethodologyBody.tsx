@@ -139,40 +139,10 @@ export function SavingsMethodologyBody() {
       {/* ── 5. Export sensitivity ── */}
       <SectionTitle>Sensitivity: value of export income</SectionTitle>
       <p>
-        Export income is a modest share of the total. Excluding it entirely reduces the portfolio's 25-year
-        savings by about 2%:
+        Export income is a modest share of the total: excluding it entirely would reduce the portfolio's
+        Year-1 saving from £109,194 to £88,487, and the 25-year total from £17,033,062 to £16,654,970 —
+        a difference of about 2%.
       </p>
-      <div className="rounded-lg border border-gray-200 overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className={th}>Site</th>
-              <th className={thR}>Y1 (with export)</th>
-              <th className={thR}>Y1 (no export)</th>
-              <th className={thR}>25yr (with export)</th>
-              <th className={thR}>25yr (no export)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {SENSITIVITY_ROWS.map((r) => (
-              <tr key={r.site} className="border-b border-gray-100 last:border-0">
-                <td className={td}>{r.site}</td>
-                <td className={tdR}>{fmtGBP(r.y1w)}</td>
-                <td className={tdR}>{fmtGBP(r.y1n)}</td>
-                <td className={tdR}>{fmtGBP(r.w25)}</td>
-                <td className={tdR}>{fmtGBP(r.n25)}</td>
-              </tr>
-            ))}
-            <tr className="bg-gray-50 border-t border-gray-200">
-              <td className={td + ' font-bold text-gray-900'}>Portfolio</td>
-              <td className={tdR + ' font-bold text-gray-900'}>{fmtGBP(SENS_TOTAL.y1w)}</td>
-              <td className={tdR + ' font-bold'}>{fmtGBP(SENS_TOTAL.y1n)}</td>
-              <td className={tdR + ' font-bold text-gray-900'}>{fmtGBP(SENS_TOTAL.w25)}</td>
-              <td className={tdR + ' font-bold'}>{fmtGBP(SENS_TOTAL.n25)}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
 
       {/* ── 6. Assumptions & caveats ── */}
       <SectionTitle>Assumptions &amp; caveats</SectionTitle>

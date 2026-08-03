@@ -60,6 +60,7 @@ export function SavingsSummaryModal({ open, onClose, onSelectSite }: Props) {
           <span className="text-[11px] font-mono text-gray-500 w-9 text-right shrink-0">{Math.round((r.total / SAVINGS_GRAND_TOTAL) * 100)}%</span>
         </div>
       </td>
+      <td className="px-3 py-1.5 text-right font-mono text-gray-700 whitespace-nowrap">{gbp(r.year1)}</td>
       <td className="px-3 py-1.5 text-right font-mono text-gray-900 whitespace-nowrap">{gbp(r.total)}</td>
     </tr>
   );
@@ -141,6 +142,7 @@ export function SavingsSummaryModal({ open, onClose, onSelectSite }: Props) {
                       <th className="text-left px-3 py-2 text-white font-semibold">Asset (click to open)</th>
                       <th className="text-left px-3 py-2 text-white font-semibold whitespace-nowrap">Data type</th>
                       <th className="text-left px-3 py-2 text-white font-semibold hidden sm:table-cell whitespace-nowrap">Share of total savings</th>
+                      <th className="text-right px-3 py-2 text-white font-semibold whitespace-nowrap">Year 1 savings (with export)</th>
                       <th className="text-right px-3 py-2 text-white font-semibold whitespace-nowrap">25-year savings</th>
                     </tr>
                   </thead>
@@ -153,7 +155,7 @@ export function SavingsSummaryModal({ open, onClose, onSelectSite }: Props) {
                       return (
                         <Fragment key={phase}>
                           <tr style={{ background: GROUP_BG }}>
-                            <td colSpan={4} className="px-3 py-1.5 font-bold uppercase tracking-wide text-[11px]" style={{ color: HEADER_BG }}>
+                            <td colSpan={5} className="px-3 py-1.5 font-bold uppercase tracking-wide text-[11px]" style={{ color: HEADER_BG }}>
                               {label}
                             </td>
                           </tr>
@@ -161,6 +163,9 @@ export function SavingsSummaryModal({ open, onClose, onSelectSite }: Props) {
                           <tr style={{ background: actual ? ACTUALS_BG : MODELLED_BG }}>
                             <td colSpan={3} className="px-3 py-1.5 font-bold whitespace-nowrap" style={{ color: actual ? ACTUAL_COLOR : MODELLED_COLOR }}>
                               Phase {phase} subtotal
+                            </td>
+                            <td className="px-3 py-1.5 text-right font-mono font-bold whitespace-nowrap" style={{ color: actual ? ACTUAL_COLOR : MODELLED_COLOR }}>
+                              {gbp(rows.reduce((s, r) => s + r.year1, 0))}
                             </td>
                             <td className="px-3 py-1.5 text-right font-mono font-bold whitespace-nowrap" style={{ color: actual ? ACTUAL_COLOR : MODELLED_COLOR }}>
                               {gbp(subtotal)}
@@ -172,6 +177,9 @@ export function SavingsSummaryModal({ open, onClose, onSelectSite }: Props) {
                     <tr style={{ background: GROUP_TOTAL_BG }}>
                       <td colSpan={3} className="px-3 py-2 text-white font-bold uppercase tracking-wide text-[11px]">
                         Portfolio total (all assets)
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono font-bold text-white whitespace-nowrap">
+                        {gbp(SAVINGS_SUMMARY.reduce((s, r) => s + r.year1, 0))}
                       </td>
                       <td className="px-3 py-2 text-right font-mono font-bold text-white whitespace-nowrap">
                         {gbp(SAVINGS_GRAND_TOTAL)}
@@ -218,7 +226,7 @@ export function SavingsSummaryModal({ open, onClose, onSelectSite }: Props) {
       {/* Full methodology modal */}
       {showMethodology && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 p-4" onClick={() => setShowMethodology(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-5" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[85vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between gap-3 mb-3">
               <h3 className="text-base font-bold text-gray-900">Savings methodology</h3>
               <button onClick={() => setShowMethodology(false)} className="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100">

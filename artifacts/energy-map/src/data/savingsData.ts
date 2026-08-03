@@ -83,6 +83,7 @@ export interface SavingsSummaryRow {
   panelId: string;    // id for the panel's photo / stored overrides
   phase: 1 | 2 | 3;
   actual: boolean;    // Phase 1 uses actual metered generation; 2/3 modelled
+  year1: number;      // Year-1 saving (£, with export income)
   total: number;      // 25-year total savings (£)
 }
 
@@ -96,9 +97,10 @@ export const SAVINGS_SUMMARY: SavingsSummaryRow[] = ([
   { key: 'hotel',         name: 'Hotel',                       phase: 3, panelName: 'Hotel',             panelId: 'etihad-site-hotel' },
   { key: 'commercial',    name: 'Commercial',                  phase: 3, panelName: 'Commercial',        panelId: 'etihad-site-commercial' },
   { key: 'towers',        name: 'Etihad Towers',               phase: 3, panelName: 'Etihad Towers',     panelId: 'etihad-site-towers' },
-] as Array<Omit<SavingsSummaryRow, 'actual' | 'total'>>).map((r) => ({
+] as Array<Omit<SavingsSummaryRow, 'actual' | 'year1' | 'total'>>).map((r) => ({
   ...r,
   actual: r.phase === 1,
+  year1: (SAVINGS[r.key] ?? [0])[0] ?? 0,
   total: (SAVINGS[r.key] ?? []).reduce((a, b) => a + (b || 0), 0),
 }));
 
