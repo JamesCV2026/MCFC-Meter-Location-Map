@@ -669,13 +669,15 @@ export function SidePanel({ asset, onClose, onDelete, hideDelete = false }: Side
                   // in place; otherwise the panel below the header is blank.
                   // Equipment specs (if any) count as real content too, so
                   // diesel-gen / CHP markers still get a populated panel.
-                  const hideDataPlaceholders = !hasEnergy && !hasRealNumbers && !showSpecs;
+                  // MPAN markers always show their fields — n/a when no data exists yet.
+                  const isMpanMarker = asset.type === 'mpan';
+                  const hideDataPlaceholders = !isMpanMarker && !hasEnergy && !hasRealNumbers && !showSpecs;
                   return (
                   <>
                     {!hideDataPlaceholders && (
                       <div className="mb-6">
                         {asset.mpan && <Field label="MPAN" value={<span className="font-mono">{asset.mpan}</span>} />}
-                        {(hasEnergy || hasRealNumbers) && (
+                        {(hasEnergy || hasRealNumbers || isMpanMarker) && (
                           <>
                             {/* Green boxed generation total — mirrors the savings
                                 design (savings is blue, generation is green). */}

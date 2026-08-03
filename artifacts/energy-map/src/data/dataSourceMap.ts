@@ -31,6 +31,27 @@ const sources: Record<string, DataSourceEntry> = {
   'MPAN 5': {
     consumption: { url: 'data/Etihad 1 Consumption Actual.csv', label: 'MPAN 5 (HH)' },
   },
+  'MPAN 1': {
+    consumption: { url: 'data/Etihad 1 Consumption Actual.csv', label: 'MPAN 1 (HH)' },
+  },
+  'MPAN 2': {
+    consumption: { url: 'data/Etihad 2 Consumption Acutal.csv', label: 'MPAN 2 (HH)' },
+  },
+  'MPAN CFA': {
+    consumption: { url: 'data/CFA Consumption Actual.csv', label: 'CFA consumption (HH)' },
+  },
+  'MPAN Temporary Builders Supply': {
+    consumption: { url: 'data/Consumption_MCWFC_Building.csv', label: 'MCWFC Building consumption (hourly modelled)' },
+    generation: { url: 'data/Generation_MCWFC.csv', label: 'MCWFC solar generation (hourly modelled)' },
+  },
+  'MPAN Commercial Building Substation': {
+    consumption: { url: 'data/Consumption_Etihad_North_Stand_Commercial.csv', label: 'Commercial consumption (hourly modelled)' },
+    generation: { url: 'data/Generation_Etihad_North_Stand_Commercial.csv', label: 'Commercial solar generation (hourly modelled)' },
+  },
+  'MPAN hotel Podium Substation': {
+    consumption: { url: 'data/Consumption_Etihad_North_Stand_Hotel.csv', label: 'Hotel consumption (hourly modelled)' },
+    generation: { url: 'data/Generation_Etihad_North_Stand_Hotel.csv', label: 'Hotel solar generation (hourly modelled)' },
+  },
   'MPAN 16': {
     consumption: { url: 'data/Etihad 2 Consumption Acutal.csv', label: 'MPAN 16 (HH)' },
   },

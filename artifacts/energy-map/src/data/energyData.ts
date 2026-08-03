@@ -370,6 +370,13 @@ export const ENERGY_BY_NAME: Record<string, string> = {
   'City Football Academy': 'cfa',
   'MPAN 12': 'cfa',
   // Etihad Stadium MPAN breakdown — each marker shows its own meter's series.
+  // Named MPAN markers (James's 2026-08 MPAN fleet) — reuse existing series.
+  'MPAN 1': 'etihad-mpan-1',
+  'MPAN 2': 'etihad-mpan-2',
+  'MPAN CFA': 'cfa',
+  'MPAN Temporary Builders Supply': 'mcwfc',
+  'MPAN Commercial Building Substation': 'commercial',
+  'MPAN hotel Podium Substation': 'hotel',
   'MPAN 5': 'etihad-mpan-1',
   'MPAN 16': 'etihad-mpan-2',
   'MPAN 15': 'etihad-mpan-3',
