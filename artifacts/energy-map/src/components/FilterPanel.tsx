@@ -1,8 +1,11 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
+import { BookOpen, X } from 'lucide-react';
 import { ChevronRight } from 'lucide-react';
 import { AssetType, EnergyAsset } from '@/data/assets';
 import { assetTypeConfig, ENABLED_TYPES } from '@/data/assetTypes';
 import { panelInfoFor } from '@/data/panelInfo';
+import { INFRA_DEFINITIONS } from '@/data/infrastructureDefinitions';
 
 // What the index is currently highlighting on the map: a whole type (hovering a
 // group header) or a single asset (hovering one list item).
@@ -50,6 +53,7 @@ function indexItemName(a: EnergyAsset): string {
 export function FilterPanel({ visible, onChange, embedded = false, assets, onHover, onSelect }: FilterPanelProps) {
   const indexMode = !!assets && !!onHover;
   const [expanded, setExpanded] = useState<Set<AssetType>>(new Set());
+  const [legendOpen, setLegendOpen] = useState(false);
 
   // Group the supplied assets by their effective (index) type.
   const byType = new Map<AssetType, EnergyAsset[]>();
@@ -91,9 +95,59 @@ export function FilterPanel({ visible, onChange, embedded = false, assets, onHov
         onMouseLeave={() => onHover!(null)}
         className="flex-1 min-h-0 w-full flex flex-col"
       >
-        <p className="shrink-0 text-[13px] font-bold text-gray-700 uppercase tracking-wide mb-2 leading-none">
-          Infrastructure Index
-        </p>
+        <div className="shrink-0 flex items-center gap-2 mb-2">
+          <p className="flex-1 min-w-0 text-[13px] font-bold text-gray-700 uppercase tracking-wide leading-none truncate">
+            Infrastructure Index
+          </p>
+          <button
+            type="button"
+            data-testid="btn-open-legend"
+            onClick={() => setLegendOpen(true)}
+            title="What each infrastructure type means"
+            className="shrink-0 flex items-center gap-1 rounded-full border border-emerald-600 bg-emerald-500 hover:bg-emerald-400 text-white text-[10px] font-bold px-2 py-1 transition-colors"
+          >
+            <BookOpen size={11} className="shrink-0" />
+            Legend
+          </button>
+        </div>
+        {legendOpen && createPortal(
+          <div className="fixed inset-0 z-[120] bg-black/40 flex items-center justify-center p-4" onClick={() => setLegendOpen(false)}>
+            <div
+              data-testid="legend-definitions-panel"
+              className="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[85vh] overflow-y-auto p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 leading-tight">Infrastructure legend</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">What each infrastructure type on the map means.</p>
+                </div>
+                <button onClick={() => setLegendOpen(false)} aria-label="Close legend" className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors shrink-0">
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="space-y-3">
+                {INFRA_DEFINITIONS.map((d) => {
+                  const cfg = assetTypeConfig[d.type];
+                  if (!cfg) return null;
+                  const DIcon = cfg.Icon;
+                  return (
+                    <div key={d.type} className="flex gap-3 rounded-xl border border-gray-100 bg-gray-50/60 p-3">
+                      <span className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0" style={{ backgroundColor: cfg.color + '1f' }}>
+                        <DIcon size={18} style={{ color: cfg.color }} />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-[13px] font-bold text-gray-800 leading-tight">{d.name ?? cfg.label}</p>
+                        <p className="text-[12px] text-gray-600 leading-relaxed mt-0.5">{d.definition}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
         <div className="flex-1 min-h-0 overflow-y-auto pr-0.5 flex flex-col gap-2">
           {indexTypes.filter((type) => (byType.get(type)?.length ?? 0) > 0).map((type) => {
             const { label, color, Icon } = assetTypeConfig[type];

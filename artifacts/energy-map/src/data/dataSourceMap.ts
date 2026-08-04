@@ -37,6 +37,12 @@ const sources: Record<string, DataSourceEntry> = {
   'MPAN 2': {
     consumption: { url: 'data/Etihad 2 Consumption Acutal.csv', label: 'MPAN 2 (HH)' },
   },
+  'MPAN 1650000425182': {
+    consumption: { url: 'data/Etihad 1 Consumption Actual.csv', label: 'MPAN 1650000425182 (HH)' },
+  },
+  'MPAN 1620000879750': {
+    consumption: { url: 'data/Etihad 2 Consumption Acutal.csv', label: 'MPAN 1620000879750 (HH)' },
+  },
   'MPAN CFA': {
     consumption: { url: 'data/CFA Consumption Actual.csv', label: 'CFA consumption (HH)' },
   },

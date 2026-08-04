@@ -373,6 +373,11 @@ export const ENERGY_BY_NAME: Record<string, string> = {
   // Named MPAN markers (James's 2026-08 MPAN fleet) — reuse existing series.
   'MPAN 1': 'etihad-mpan-1',
   'MPAN 2': 'etihad-mpan-2',
+  // Real MPAN numbers for the same two meters.
+  'MPAN 1650000425182': 'etihad-mpan-1',
+  '1650000425182': 'etihad-mpan-1',
+  'MPAN 1620000879750': 'etihad-mpan-2',
+  '1620000879750': 'etihad-mpan-2',
   'MPAN CFA': 'cfa',
   'MPAN Temporary Builders Supply': 'mcwfc',
   'MPAN Commercial Building Substation': 'commercial',
