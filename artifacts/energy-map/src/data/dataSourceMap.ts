@@ -46,7 +46,7 @@ const sources: Record<string, DataSourceEntry> = {
   'MPAN CFA': {
     consumption: { url: 'data/CFA Consumption Actual.csv', label: 'CFA consumption (HH)' },
   },
-  'MPAN Temporary Builders Supply': {
+  'MPAN MCWFC': {
     consumption: { url: 'data/Consumption_MCWFC_Building.csv', label: 'MCWFC Building consumption (hourly modelled)' },
     generation: { url: 'data/Generation_MCWFC.csv', label: 'MCWFC solar generation (hourly modelled)' },
   },
